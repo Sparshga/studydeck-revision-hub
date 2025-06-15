@@ -212,7 +212,6 @@ const Dashboard = () => {
     let completed = 0,
       left = 0;
     eventsList.forEach((task, i) => {
-      if (task.class) return; // skip tasks with a class
       if (doneList[i]) completed++;
       else left++;
     });
@@ -425,7 +424,7 @@ const Dashboard = () => {
               >
                 {/* No children */}
               </DayDetailPopover>
-              {/* Now shows info for selected day, and passes new handlers */}
+              {/* Info for selected day, Passes new handlers */}
               <div className="min-w-[320px] flex flex-col gap-2">
                 <TodayInfoBox
                   dayType={infoBoxDayType}
@@ -450,7 +449,6 @@ const Dashboard = () => {
                   availableLabels={classes}
                   onAddTask={handleAddTaskWithLabel}
                 />
-                <TodaysTaskList tasks={events[todayString] || []} />
               </div>
             </div>
           </CardContent>
@@ -462,7 +460,7 @@ const Dashboard = () => {
               title: selectedDay
                 ? `Selected (${selectedDay.toLocaleDateString()})`
                 : `Today (${today.toLocaleDateString()})`,
-              stat: selectedStats, // This includes ALL tasks for selected day, with or without label
+              stat: selectedStats, // Now counts ALL tasks (with or without label)
               color: "#2ecc40",
             },
             {
