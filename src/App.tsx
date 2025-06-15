@@ -15,37 +15,31 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NoteDetail from "./pages/NoteDetail";
 import NotFound from "./pages/NotFound";
-// import ReactiveBackground from "@/components/ReactiveBackground"; // REMOVE THIS LINE
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <>
-    {/* Only render ReactiveBackground inside /dashboard using the Dashboard page */}
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Navbar />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/add-note" element={<AddNote />} />
-            <Route path="/revision-queue" element={<RevisionQueue />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/notes/:id" element={<NoteDetail />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/notes" element={<Notes />} />
+          <Route path="/add-note" element={<AddNote />} />
+          <Route path="/revision-queue" element={<RevisionQueue />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/notes/:id" element={<NoteDetail />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
-

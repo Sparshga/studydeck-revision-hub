@@ -1,8 +1,6 @@
 
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import ReactiveBackground from "@/components/ReactiveBackground";
 import DashboardStatsCard from "@/components/DashboardStatsCard";
 import LabelStatsSection from "@/components/LabelStatsSection";
 
@@ -33,40 +31,26 @@ const sampleLabelStats = {
 };
 
 const Dashboard = () => {
-  const [bubbleMode, setBubbleMode] = React.useState(false);
-
   return (
-    <>
-      <ReactiveBackground bubbleMode={bubbleMode} />
-      <main className="flex min-h-[80vh] flex-col items-center justify-start p-8 bg-background w-full">
-        <Card className="w-full max-w-lg shadow-md animate-fade-in mb-8">
-          <CardHeader>
-            <CardTitle>Dashboard</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4 mb-4">
-              <span className="font-medium">Bubble Mode</span>
-              <Switch
-                checked={bubbleMode}
-                onCheckedChange={setBubbleMode}
-                aria-label="Toggle Bubble Mode"
-              />
-            </div>
-            <p className="text-muted-foreground mb-4">Welcome to your dashboard! Use Bubble Mode for fun visual effects, and review your progress below.</p>
-          </CardContent>
-        </Card>
+    <main className="flex min-h-[80vh] flex-col items-center justify-start p-8 bg-background w-full">
+      <Card className="w-full max-w-lg shadow-md animate-fade-in mb-8">
+        <CardHeader>
+          <CardTitle>Dashboard</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground mb-4">Welcome to your dashboard! Review your progress below.</p>
+        </CardContent>
+      </Card>
 
-        {/* Dashboard Stats */}
-        <div className="w-full max-w-4xl">
-          <DashboardStatsCard stats={sampleStats} />
+      {/* Dashboard Stats */}
+      <div className="w-full max-w-4xl">
+        <DashboardStatsCard stats={sampleStats} />
 
-          {/* Label/Tag Stats */}
-          <LabelStatsSection classStats={sampleLabelStats} />
-        </div>
-      </main>
-    </>
+        {/* Label/Tag Stats */}
+        <LabelStatsSection classStats={sampleLabelStats} />
+      </div>
+    </main>
   );
 };
 
 export default Dashboard;
-
