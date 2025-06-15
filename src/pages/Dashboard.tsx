@@ -12,6 +12,9 @@ import { useState, useMemo } from "react";
 // Modified day types (no truancy!)
 type DayType = "work" | "vacation" | "sickness";
 
+// Add PieStat type directly in this file for type support
+type PieStat = { completed: number; left: number };
+
 function getInitialDays() {
   // Similar mockDays logic, simply use without truancy
   const result: { [key: string]: DayType } = {};
