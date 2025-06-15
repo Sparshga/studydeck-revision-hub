@@ -22,6 +22,15 @@ function getInitialDays() {
   return result;
 }
 
+function getInitialDoneMap(eventsObj: { [key: string]: string[] }) {
+  // Initialize each day to an empty array matching the number of events for that day
+  const done: { [key: string]: boolean[] } = {};
+  for (const key in eventsObj) {
+    done[key] = eventsObj[key]?.map(() => false);
+  }
+  return done;
+}
+
 const Dashboard = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [displayMonth, setDisplayMonth] = useState<Date>(new Date()); // for calendar view
@@ -29,6 +38,11 @@ const Dashboard = () => {
   const [events, setEvents] = useState<{ [key: string]: string[] }>({});
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
+
+  // Add state for task done tracking
+  const [doneMap, setDoneMap] = useState<{ [key: string]: boolean[] }>(() =>
+    getInitialDoneMap({})
+  );
 
   // The selected date string and info
   const selectedString = selectedDay?.toDateString() ?? "";
@@ -66,29 +80,60 @@ const Dashboard = () => {
     }
   };
 
-  const handleAddEvent = (event: string) => {
+  // Extend onAddEvent for doneMap
+  const enhancedHandleAddEvent = (event: string) => {
     if (selectedDay) {
+      const dayStr = selectedDay.toDateString();
       setEvents((prev) => {
-        const dayStr = selectedDay.toDateString();
-        return {
+        const newEvents = {
           ...prev,
           [dayStr]: [...(prev[dayStr] || []), event],
-        }
+        };
+        // Add new doneMap entry for new event
+        setDoneMap((dPrev) => ({
+          ...dPrev,
+          [dayStr]: [...(dPrev[dayStr] || []), false],
+        }));
+        return newEvents;
       });
     }
   };
 
-  const handleRemoveEvent = (i: number) => {
+  // Extend remove event for doneMap
+  const enhancedHandleRemoveEvent = (i: number) => {
     if (selectedDay) {
+      const dayStr = selectedDay.toDateString();
       setEvents((prev) => {
-        const dayStr = selectedDay.toDateString();
         if (!prev[dayStr]) return prev;
         const next = [...prev[dayStr]];
         next.splice(i, 1);
+        setDoneMap((dPrev) => {
+          const doneList = Array.isArray(dPrev[dayStr]) ? [...dPrev[dayStr]] : [];
+          doneList.splice(i, 1);
+          return {
+            ...dPrev,
+            [dayStr]: doneList,
+          };
+        });
         return {
           ...prev,
           [dayStr]: next,
-        }
+        };
+      });
+    }
+  };
+
+  // Handler for toggling event done status
+  const handleToggleDone = (idx: number) => {
+    if (selectedDay) {
+      const dayStr = selectedDay.toDateString();
+      setDoneMap((prev) => {
+        const arr = Array.isArray(prev[dayStr]) ? [...prev[dayStr]] : [];
+        arr[idx] = !arr[idx];
+        return {
+          ...prev,
+          [dayStr]: arr,
+        };
       });
     }
   };
@@ -113,6 +158,10 @@ const Dashboard = () => {
   const infoBoxDayType: DayType = selectedType;
   const infoBoxEvents: string[] = selectedEvents;
   const infoBoxDate: Date = selectedDay ?? today;
+  const infoBoxDoneMap: boolean[] = doneMap[selectedString] || [];
+  const isToday = selectedDay
+    ? selectedDay.toDateString() === todayString
+    : true;
 
   // Modifier arrays for the calendar
   const mockDays = days;
@@ -192,17 +241,13 @@ const Dashboard = () => {
                         table: "w-full border-collapse space-y-1",
                         head_row: "flex",
                         head_cell: "text-muted-foreground w-9 font-normal text-[0.8rem]",
-                        // Keep squares, rounded edges.
                         cell: "h-9 w-9 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20",
-                        // Day (square, rounded edges)
-                        day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-md",
+                        day:
+                          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-md",
                         day_range_end: "day-range-end",
-                        // Custom: dark (black background) for selected
                         day_selected:
                           "bg-black text-white hover:bg-black hover:text-white focus:bg-black focus:text-white rounded-md",
-                        // Custom: ring highlight (not filled) for today
                         day_today: "ring-2 ring-primary ring-offset-2 font-bold rounded-md",
-                        // Rest default
                         day_outside:
                           "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
                         day_disabled: "text-muted-foreground opacity-50",
@@ -215,7 +260,6 @@ const Dashboard = () => {
                         work: "bg-yellow-400 text-white rounded-md",
                         vacation: "bg-gray-300 text-gray-800 rounded-md",
                         sickness: "bg-red-300 text-gray-900 rounded-md",
-                        // Custom for today ring (not filled)
                         today: "ring-2 ring-primary ring-offset-2 font-bold rounded-md",
                       }}
                       fromDate={new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1)}
@@ -242,12 +286,19 @@ const Dashboard = () => {
                 dayType={selectedType}
                 onDayTypeChange={handleDayTypeChange}
                 events={selectedEvents}
-                onAddEvent={handleAddEvent}
-                onRemoveEvent={handleRemoveEvent}
+                onAddEvent={enhancedHandleAddEvent}
+                onRemoveEvent={enhancedHandleRemoveEvent}
               />
               {/* Now shows info for selected day */}
               <div className="min-w-[280px]">
-                <TodayInfoBox dayType={infoBoxDayType} events={infoBoxEvents} date={infoBoxDate} />
+                <TodayInfoBox
+                  dayType={infoBoxDayType}
+                  events={infoBoxEvents}
+                  date={infoBoxDate}
+                  doneMap={infoBoxDoneMap}
+                  onToggleDone={handleToggleDone}
+                  isToday={isToday}
+                />
               </div>
             </div>
           </CardContent>
