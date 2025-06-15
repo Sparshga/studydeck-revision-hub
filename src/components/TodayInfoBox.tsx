@@ -115,7 +115,7 @@ export default function TodayInfoBox({
                 )}
               </li>
             ))
-          : null /* Remove placeholder */}
+          : null /* No placeholder or empty message */ }
       </ul>
       
       {/* Only show 'Add To Do' button if not past */}
