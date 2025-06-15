@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar as CalendarIcon, Mail, MapPin, Phone, Pencil } from "lucide-react";
@@ -49,7 +48,7 @@ const ProfileCard = () => {
     <Card className="shadow-xl animate-fade-in h-fit px-0 py-0 overflow-hidden relative rounded-2xl">
       {/* Edit Icon */}
       <button
-        className="absolute top-3 right-3 z-10 bg-yellow-400/90 hover:bg-yellow-500 transition-colors rounded-full p-1.5 shadow focus:outline-none"
+        className="absolute top-3 right-3 z-10 bg-blue-500/90 hover:bg-blue-600 transition-colors rounded-full p-1.5 shadow focus:outline-none"
         aria-label="Edit profile"
         type="button"
         onClick={() => setEditMode((m) => !m)}
@@ -57,7 +56,7 @@ const ProfileCard = () => {
         <Pencil size={18} className="text-white" />
       </button>
       {/* Banner + Avatar */}
-      <div className="bg-gradient-to-r from-yellow-300/70 via-yellow-200/70 to-yellow-100/80 pt-8 pb-4 px-6">
+      <div className="bg-gradient-to-r from-blue-400/70 via-purple-400/70 to-indigo-400/80 pt-8 pb-4 px-6">
         <div className="flex flex-col items-center relative">
           {/* Uploadable Avatar */}
           <div className="relative group">
@@ -74,11 +73,11 @@ const ProfileCard = () => {
                 <Avatar className="w-20 h-20">
                   <AvatarImage src={profileImg} alt="Profile" />
                   <AvatarFallback>
-                    <Pencil size={40} className="text-yellow-500" />
+                    <Pencil size={40} className="text-blue-500" />
                   </AvatarFallback>
                 </Avatar>
               ) : (
-                <Pencil size={40} className="text-yellow-500 group-hover:text-yellow-700" />
+                <Pencil size={40} className="text-blue-500 group-hover:text-blue-700" />
               )}
               <input
                 type="file"
@@ -124,7 +123,7 @@ const ProfileCard = () => {
         <div className="text-xs font-semibold text-muted-foreground mb-1 mt-2">Basic Information</div>
         <ul className="text-sm space-y-1 mb-4">
           <li className="flex items-center gap-2">
-            <CalendarIcon className="w-4 h-4 text-yellow-400" />
+            <CalendarIcon className="w-4 h-4 text-blue-500" />
             <span className="w-28">Birthday</span>
             <span className="flex-1 text-right">
               {editMode ? (
@@ -143,7 +142,7 @@ const ProfileCard = () => {
             </span>
           </li>
           <li className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-yellow-400" />
+            <Phone className="w-4 h-4 text-blue-500" />
             <span className="w-28">Phone number</span>
             <span className="flex-1 text-right">
               {editMode ? (
@@ -160,7 +159,7 @@ const ProfileCard = () => {
             </span>
           </li>
           <li className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-yellow-400" />
+            <Mail className="w-4 h-4 text-blue-500" />
             <span className="w-28">E-Mail</span>
             <span className="flex-1 text-right truncate">
               <span className={editMode ? "bg-gray-100 cursor-not-allowed px-1 rounded" : ""}>
@@ -169,7 +168,7 @@ const ProfileCard = () => {
             </span>
           </li>
           <li className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-yellow-400" />
+            <MapPin className="w-4 h-4 text-blue-500" />
             <span className="w-28">City</span>
             <span className="flex-1 text-right">
               {editMode ? (
@@ -186,7 +185,7 @@ const ProfileCard = () => {
             </span>
           </li>
           <li className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-yellow-400" />
+            <MapPin className="w-4 h-4 text-blue-500" />
             <span className="w-28">Address</span>
             <span className="flex-1 text-right">
               {editMode ? (
@@ -209,20 +208,20 @@ const ProfileCard = () => {
           <div className="flex flex-col gap-1 text-sm">
             <div className="flex items-center justify-between">
               <span>Total notes added</span>
-              <span className="font-bold text-yellow-600">{totalNotes}</span>
+              <span className="font-bold text-blue-600">{totalNotes}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Notes in queue</span>
-              <span className="font-bold text-yellow-600">{notesInQueue}</span>
+              <span className="font-bold text-blue-600">{notesInQueue}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Tasks for today</span>
-              <span className="font-bold text-yellow-600">{tasksToday}</span>
+              <span className="font-bold text-blue-600">{tasksToday}</span>
             </div>
           </div>
         </div>
         {editMode && (
-          <Button onClick={handleSave} className="w-full mt-2 bg-yellow-500 text-white hover:bg-yellow-600">
+          <Button onClick={handleSave} className="w-full mt-2 bg-blue-500 text-white hover:bg-blue-600">
             Save
           </Button>
         )}
@@ -232,4 +231,3 @@ const ProfileCard = () => {
 };
 
 export default ProfileCard;
-
