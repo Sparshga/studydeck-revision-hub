@@ -1,85 +1,69 @@
 
 import React from "react";
 
-// Colorful palettes for light/dark mode
-const pastelColors = [
-  "rgba(255, 180, 120, 0.7)",    // orange
-  "rgba(150, 200, 255, 0.7)",    // light blue
-  "rgba(190, 255, 170, 0.68)",   // green
-  "rgba(255, 170, 230, 0.62)",   // pink-purple
-  "rgba(220, 250, 160, 0.6)",    // yellow-green
-  "rgba(255,215,100, 0.72)",     // gold
-  "rgba(110,255,230,0.62)",      // turquoise
-  "rgba(250,165,200,0.66)",      // rose
-  "rgba(170,230,255,0.63)",      // baby blue
+// Simple vivid bubble colors for best visibility
+const colors = [
+  "#FF6B6B", // red
+  "#6BCB77", // green
+  "#4D96FF", // blue
+  "#FFD93D", // yellow
+  "#FF6BAA", // pink
+  "#6B6BFF", // purple-blue
+  "#FFB26B", // orange
 ];
 
-const baseSize = 110;
+// How long the bubble persists (ms)
+const DURATION = 1000;
+const SIZE = 120;
 
-type ClickBubble = {
+type Bubble = {
   id: number;
   x: number;
   y: number;
   color: string;
-  created: number;
+  born: number;
 };
 
-const Bubble: React.FC<{ x: number; y: number; color: string; remove: boolean }> = ({
+const Bubble: React.FC<{ x: number; y: number; color: string; fading: boolean }> = ({
   x,
   y,
   color,
-  remove,
+  fading,
 }) => (
   <div
-    className={`absolute rounded-full pointer-events-none transition-all duration-700 ease-out`}
+    className={`absolute rounded-full pointer-events-none transition-all duration-700`}
     style={{
-      left: x - baseSize / 2,
-      top: y - baseSize / 2,
-      width: baseSize,
-      height: baseSize,
+      left: x - SIZE / 2,
+      top: y - SIZE / 2,
+      width: SIZE,
+      height: SIZE,
       background: color,
-      opacity: remove ? 0 : 1,
-      filter: `blur(10px) opacity(0.78) drop-shadow(0 0 32px ${color})`,
-      boxShadow: `0 0 64px 0 ${color}`,
-      transform: remove ? "scale(1.26)" : "scale(1)",
-      transition:
-        "opacity 0.7s, transform 0.7s, filter 0.7s, box-shadow 0.7s",
-      zIndex: 1,
+      opacity: fading ? 0 : 0.7,
+      zIndex: 9999,
+      boxShadow: `0 0 32px 0 ${color}`,
+      transform: fading ? "scale(1.2)" : "scale(1)",
+      transition: "opacity 0.6s, transform 0.6s",
     }}
   />
 );
 
 const ReactiveBackground: React.FC = () => {
-  const [bubbles, setBubbles] = React.useState<ClickBubble[]>([]);
-  const [mode, setMode] = React.useState<"light" | "dark">("light");
+  const [bubbles, setBubbles] = React.useState<Bubble[]>([]);
   const idRef = React.useRef(0);
 
-  // Watch for dark mode
-  React.useEffect(() => {
-    const updateTheme = () => {
-      const isDark = document.documentElement.classList.contains("dark");
-      setMode(isDark ? "dark" : "light");
-    };
-    updateTheme();
-    const obs = new MutationObserver(updateTheme);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-
-  // Add a bubble on click (anywhere)
   React.useEffect(() => {
     function handleClick(e: MouseEvent) {
-      // Limit target to window/document only (not forms/inputs)
+      // Ignore click if on form input/button/select/textarea
       if (
-        // @ts-ignore
-        typeof e.target?.closest === "function" &&
-        // @ts-ignore
-        e.target.closest("input, textarea, button, select, [data-ignore-background-bubble]")
+        typeof (e.target as HTMLElement)?.closest === "function" &&
+        (e.target as HTMLElement).closest(
+          "input, textarea, button, select, [data-ignore-background-bubble]"
+        )
       ) {
         return;
       }
-      const palette = pastelColors;
-      const color = palette[Math.floor(Math.random() * palette.length)];
+      // Pick a random color
+      const color = colors[Math.floor(Math.random() * colors.length)];
       const id = idRef.current++;
       setBubbles((prev) => [
         ...prev,
@@ -88,29 +72,38 @@ const ReactiveBackground: React.FC = () => {
           x: e.clientX,
           y: e.clientY,
           color,
-          created: Date.now(),
+          born: Date.now(),
         },
       ]);
-      // Remove after 1.05s for fade-out animation
+      // Remove after DURATION+100ms for fade out
       setTimeout(() => {
         setBubbles((prev) => prev.filter((b) => b.id !== id));
-      }, 1050);
+      }, DURATION + 100);
     }
     window.addEventListener("mousedown", handleClick);
     return () => window.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Compute which bubbles should remove (fade out) based on time
   const now = Date.now();
-  const rendered = bubbles.map((bubble) => ({
-    ...bubble,
-    remove: now - bubble.created > 700,
+  const display = bubbles.map((b) => ({
+    ...b,
+    fading: now - b.born > DURATION * 0.7,
   }));
 
   return (
-    <div className="fixed inset-0 -z-10 pointer-events-none select-none" aria-hidden="true">
-      {rendered.map((b) => (
-        <Bubble key={b.id} x={b.x} y={b.y} color={b.color} remove={b.remove} />
+    <div
+      className="fixed inset-0 pointer-events-none"
+      style={{ zIndex: 9999 }}
+      aria-hidden="true"
+    >
+      {display.map((b) => (
+        <Bubble
+          key={b.id}
+          x={b.x}
+          y={b.y}
+          color={b.color}
+          fading={b.fading}
+        />
       ))}
     </div>
   );
