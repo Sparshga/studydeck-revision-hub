@@ -24,32 +24,36 @@ function getInitialDays() {
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [displayMonth, setDisplayMonth] = useState<Date>(new Date()); // for calendar view
   const [days, setDays] = useState<{ [key: string]: DayType }>(getInitialDays);
   const [events, setEvents] = useState<{ [key: string]: string[] }>({});
   const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
 
-  // For today info
-  const todayString = new Date().toDateString();
-  const todayType: DayType = days[todayString] || "work";
-  const todayEvents: string[] = events[todayString] || [];
+  // The selected date string and info
+  const selectedString = selectedDay?.toDateString() ?? "";
+  const selectedType: DayType = days[selectedString] || "work";
+  const selectedEvents: string[] = events[selectedString] || [];
+
+  // Only today's string and data
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayString = today.toDateString();
 
   // Handler for calendar click - only allow dates of today or newer
   const handleCalendarSelect = (d?: Date) => {
+    if (!d) return;
     setDate(d);
-    if (d) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const clicked = new Date(d);
-      clicked.setHours(0, 0, 0, 0);
-      if (clicked >= today) {
-        setSelectedDay(d);
-        setDetailOpen(true);
-      } else {
-        // Don't show popover at all for past dates
-        setDetailOpen(false);
-        setSelectedDay(null);
-      }
+    setDisplayMonth(new Date(d.getFullYear(), d.getMonth()));
+    const clicked = new Date(d);
+    clicked.setHours(0, 0, 0, 0);
+    if (clicked >= today) {
+      setSelectedDay(d);
+      setDetailOpen(true);
+    } else {
+      // Don't show popover at all for past dates
+      setDetailOpen(false);
+      setSelectedDay(d); // still update selection
     }
   };
 
@@ -89,10 +93,26 @@ const Dashboard = () => {
     }
   };
 
-  // Get data for selected
-  const selectedString = selectedDay?.toDateString() ?? "";
-  const selectedType: DayType = days[selectedString] || "work";
-  const selectedEvents: string[] = events[selectedString] || [];
+  // Calendar navigation handlers (month/year)
+  const handleMonthChange = (inc: number) => {
+    setDisplayMonth(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + inc);
+      return new Date(newDate.getFullYear(), newDate.getMonth());
+    });
+  };
+  const handleYearChange = (inc: number) => {
+    setDisplayMonth(prev => {
+      const newDate = new Date(prev);
+      newDate.setFullYear(prev.getFullYear() + inc);
+      return new Date(newDate.getFullYear(), newDate.getMonth());
+    });
+  };
+
+  // The info box will now show selected date info
+  const infoBoxDayType: DayType = selectedType;
+  const infoBoxEvents: string[] = selectedEvents;
+  const infoBoxDate: Date = selectedDay ?? today;
 
   // Modifier arrays for the calendar
   const mockDays = days;
@@ -100,7 +120,7 @@ const Dashboard = () => {
     work: Object.keys(mockDays).filter((d) => mockDays[d] === "work").map((d) => new Date(d)),
     vacation: Object.keys(mockDays).filter((d) => mockDays[d] === "vacation").map((d) => new Date(d)),
     sickness: Object.keys(mockDays).filter((d) => mockDays[d] === "sickness").map((d) => new Date(d)),
-    today: [new Date()]
+    today: [today],
   };
 
   return (
@@ -115,8 +135,30 @@ const Dashboard = () => {
           <CardHeader className="pb-2 pt-6 px-6 flex flex-row items-center justify-between">
             <CardTitle className="text-xl">Dashboard</CardTitle>
             <div className="flex gap-2 items-center">
-              {/* Show month/year */}
-              <span className="text-sm text-foreground">{date ? date.toLocaleString(undefined, { month: "long", year: "numeric" }) : ""}</span>
+              {/* Month/year navigation */}
+              <button
+                className="p-1 rounded hover:bg-muted"
+                onClick={() => handleYearChange(-1)}
+                aria-label="Prev year"
+              >{"<<"}</button>
+              <button
+                className="p-1 rounded hover:bg-muted"
+                onClick={() => handleMonthChange(-1)}
+                aria-label="Prev month"
+              >{"<"}</button>
+              <span className="text-sm text-foreground min-w-[120px] text-center">
+                {displayMonth.toLocaleString(undefined, { month: "long", year: "numeric" })}
+              </span>
+              <button
+                className="p-1 rounded hover:bg-muted"
+                onClick={() => handleMonthChange(1)}
+                aria-label="Next month"
+              >{">"}</button>
+              <button
+                className="p-1 rounded hover:bg-muted"
+                onClick={() => handleYearChange(1)}
+                aria-label="Next year"
+              >{">>"}</button>
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-2 pt-0 pb-6 px-6">
@@ -126,14 +168,16 @@ const Dashboard = () => {
             <div className="border rounded-lg p-2 bg-white shadow-sm overflow-x-auto pointer-events-auto flex flex-col sm:flex-row gap-4">
               {/* CALENDAR */}
               <DayDetailPopover
-                open={detailOpen}
+                open={detailOpen && (selectedDay ? selectedDay >= today : false)}
                 onOpenChange={setDetailOpen}
                 anchor={
                   <div>
                     <Calendar
                       mode="single"
-                      selected={date}
+                      selected={selectedDay || date}
                       onSelect={handleCalendarSelect}
+                      month={displayMonth}
+                      onMonthChange={setDisplayMonth}
                       className="pointer-events-auto"
                       classNames={{
                         row: "flex w-full mt-2 space-x-1",
@@ -148,14 +192,17 @@ const Dashboard = () => {
                         table: "w-full border-collapse space-y-1",
                         head_row: "flex",
                         head_cell: "text-muted-foreground w-9 font-normal text-[0.8rem]",
-                        // Make each day cell slightly rounded (squares with rounded edges)
+                        // Keep squares, rounded edges.
                         cell: "h-9 w-9 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20",
-                        // Style each day button (still square, slightly rounded)
+                        // Day (square, rounded edges)
                         day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-md",
                         day_range_end: "day-range-end",
+                        // Custom: dark (black background) for selected
                         day_selected:
-                          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-md",
-                        day_today: "bg-accent text-accent-foreground rounded-md",
+                          "bg-black text-white hover:bg-black hover:text-white focus:bg-black focus:text-white rounded-md",
+                        // Custom: ring highlight (not filled) for today
+                        day_today: "ring-2 ring-primary ring-offset-2 font-bold rounded-md",
+                        // Rest default
                         day_outside:
                           "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
                         day_disabled: "text-muted-foreground opacity-50",
@@ -168,13 +215,15 @@ const Dashboard = () => {
                         work: "bg-yellow-400 text-white rounded-md",
                         vacation: "bg-gray-300 text-gray-800 rounded-md",
                         sickness: "bg-red-300 text-gray-900 rounded-md",
-                        today: "ring-2 ring-primary ring-offset-2 font-bold rounded-md"
+                        // Custom for today ring (not filled)
+                        today: "ring-2 ring-primary ring-offset-2 font-bold rounded-md",
                       }}
-                      fromDate={new Date(new Date().getFullYear(), new Date().getMonth(), 1)}
-                      toDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)}
+                      fromDate={new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1)}
+                      toDate={new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0)}
                       showOutsideDays={false}
                       disabled={() => false}
                     />
+                    {/* Legend */}
                     <div className="flex gap-4 mt-4 px-2 text-xs items-center">
                       <span className="flex gap-1 items-center">
                         <span className="w-3 h-3 bg-yellow-400 inline-block rounded-md"></span>Work
@@ -189,16 +238,16 @@ const Dashboard = () => {
                     </div>
                   </div>
                 }
-                date={selectedDay || new Date()}
+                date={selectedDay || today}
                 dayType={selectedType}
                 onDayTypeChange={handleDayTypeChange}
                 events={selectedEvents}
                 onAddEvent={handleAddEvent}
                 onRemoveEvent={handleRemoveEvent}
               />
-              {/* TODAY'S INFO BOX */}
+              {/* Now shows info for selected day */}
               <div className="min-w-[280px]">
-                <TodayInfoBox dayType={todayType} events={todayEvents} date={new Date()} />
+                <TodayInfoBox dayType={infoBoxDayType} events={infoBoxEvents} date={infoBoxDate} />
               </div>
             </div>
           </CardContent>
