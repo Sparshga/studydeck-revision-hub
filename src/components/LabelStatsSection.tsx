@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   PieChart,
@@ -11,16 +10,16 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tag } from "lucide-react";
 
-// Custom label rendering for better visibility
+// Custom label rendering for better visibility -- ALWAYS RENDER %
 const renderCustomLabel = (props: any) => {
-  const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props;
-  // calculate label position
+  const { cx, cy, midAngle, innerRadius, outerRadius, percent, value } = props;
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.7;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-  if (props.value === 0) return null; // Don't render for zero segments
+  // Show 0% if segment is present but value=0
+  if (value === 0 && percent === 0) return null;
   return (
     <text
       x={x}
@@ -32,9 +31,7 @@ const renderCustomLabel = (props: any) => {
       dominantBaseline="central"
       stroke="white"
       strokeWidth={1}
-      style={{
-        filter: "drop-shadow(1px 1px 2px #fff9)",
-      }}
+      style={{ filter: "drop-shadow(1px 1px 2px #fff9)" }}
     >
       {`${Math.round(percent * 100)}%`}
     </text>
@@ -83,11 +80,7 @@ const LABELS = [
 
 const LabelStatsSection: React.FC<LabelStatsSectionProps> = ({ classStats }) => {
   const labelNames = Object.keys(classStats);
-
-  if (labelNames.length === 0) {
-    return null;
-  }
-
+  if (labelNames.length === 0) return null;
   return (
     <section className="w-full mt-6">
       <Card className="w-full shadow-md bg-muted/50">

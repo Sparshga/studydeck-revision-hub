@@ -10,6 +10,7 @@ import ClassManager from "@/components/ClassManager";
 import LabelStatsSection from "@/components/LabelStatsSection";
 import { Select } from "@/components/ui/select";
 import { useState, useMemo } from "react";
+import AddTaskSection from "@/components/AddTaskSection";
 
 // Modified day types (no truancy!)
 type DayType = "work" | "vacation" | "sickness";
@@ -288,6 +289,11 @@ const Dashboard = () => {
     return result;
   }, [classes, selectedDay, events, doneMap, today]);
 
+  // Handle AddTaskSection "add task" logic unified for both labeled and non-labeled tasks:
+  const handleAddTaskWithLabel = (taskText: string, label?: string) => {
+    enhancedHandleAddEvent(taskText, label);
+  };
+
   return (
     // Outer container: horizontal flex on md+, stack on mobile
     <main className="min-h-[90vh] w-full flex flex-col md:flex-row items-start justify-start gap-6 bg-white p-2 sm:p-8">
@@ -412,15 +418,13 @@ const Dashboard = () => {
                 dayType={selectedType}
                 onDayTypeChange={handleDayTypeChange}
                 events={selectedEvents}
-                // Update addEvent to show label picker before adding
                 onAddEvent={() => {}}
                 onRemoveEvent={enhancedHandleRemoveEvent}
-                // ... keep other props ...
               >
                 {/* No children */}
               </DayDetailPopover>
               {/* Now shows info for selected day, and passes new handlers */}
-              <div className="min-w-[320px]">
+              <div className="min-w-[320px] flex flex-col gap-2">
                 <TodayInfoBox
                   dayType={infoBoxDayType}
                   events={selectedEvents}
@@ -430,50 +434,22 @@ const Dashboard = () => {
                   isToday={isToday}
                   isSelected={true}
                   onDayTypeChange={handleDayTypeChange}
-                  // Custom onAddEvent supports label selection
                   onAddEvent={(taskStr: string) => {
-                    if (!classes.length) {
-                      enhancedHandleAddEvent(taskStr, undefined);
-                    } else {
-                      // Show prompt for user to select label if not set
-                      if (!pendingClass) {
-                        // Default: assign first class if only one
-                        setPendingClass(classes[0]);
-                      }
-                      enhancedHandleAddEvent(taskStr, pendingClass || classes[0]);
-                    }
+                    // fallback for adding one (button in modal)
+                    handleAddTaskWithLabel(taskStr, pendingClass || undefined);
                   }}
                   onRemoveEvent={enhancedHandleRemoveEvent}
                   onAddTasks={(tasks: string[]) => {
-                    tasks.forEach(task => enhancedHandleAddEvent(task, pendingClass || classes[0]));
+                    tasks.forEach(task =>
+                      handleAddTaskWithLabel(task, pendingClass || undefined)
+                    );
                   }}
-                  // Pass class list and selected class to info box
-                  availableClasses={classes}
-                  pendingClass={pendingClass}
-                  setPendingClass={setPendingClass}
-                  eventsData={events[selectedString] || []}
                 />
-                {/* Below: Label/class selector for new task */}
-                {classes.length > 0 && (
-                  <div className="mt-4">
-                    <label htmlFor="newtask-class" className="text-xs font-medium text-muted-foreground mb-1">
-                      Assign label to new task:
-                    </label>
-                    <select
-                      id="newtask-class"
-                      className="border bg-white py-1 px-2 rounded min-w-[100px] text-sm"
-                      value={pendingClass}
-                      onChange={e => setPendingClass(e.target.value)}
-                    >
-                      <option value="">No label</option>
-                      {classes.map(c => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {/* Add task section, below TodayInfoBox */}
+                <AddTaskSection
+                  availableLabels={classes}
+                  onAddTask={handleAddTaskWithLabel}
+                />
               </div>
             </div>
           </CardContent>
