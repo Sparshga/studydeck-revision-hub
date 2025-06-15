@@ -14,19 +14,25 @@ type AddTaskSectionProps = {
   onAddTask: (task: string, label?: string) => void;
 };
 
+const NO_LABEL_VALUE = "__none__";
+
 const AddTaskSection: React.FC<AddTaskSectionProps> = ({
   availableLabels,
   onAddTask,
 }) => {
   const [input, setInput] = useState("");
-  const [selectedLabel, setSelectedLabel] = useState<string>("");
+  const [selectedLabel, setSelectedLabel] = useState<string>(NO_LABEL_VALUE);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed) return;
-    onAddTask(trimmed, selectedLabel || undefined);
+    onAddTask(
+      trimmed,
+      selectedLabel === NO_LABEL_VALUE ? undefined : selectedLabel
+    );
     setInput("");
+    setSelectedLabel(NO_LABEL_VALUE);
   };
 
   return (
@@ -48,7 +54,9 @@ const AddTaskSection: React.FC<AddTaskSectionProps> = ({
               <SelectValue placeholder="Choose label" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem key="" value="">No label</SelectItem>
+              <SelectItem key={NO_LABEL_VALUE} value={NO_LABEL_VALUE}>
+                No label
+              </SelectItem>
               {availableLabels.map(c => (
                 <SelectItem key={c} value={c}>
                   {c}
