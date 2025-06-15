@@ -7,6 +7,7 @@ import DayDetailPopover from "@/components/DayDetailPopover";
 import TodayInfoBox from "@/components/TodayInfoBox";
 import StatsDashboard from "@/components/StatsDashboard";
 import ClassManager from "@/components/ClassManager";
+import LabelStatsSection from "@/components/LabelStatsSection";
 import { useState, useMemo } from "react";
 
 // Modified day types (no truancy!)
@@ -458,6 +459,7 @@ const Dashboard = () => {
             ]}
           />
         </div>
+        <LabelStatsSection classStats={classStats} />
       </div>
 
       {/* Right: Profile Card as sidebar */}
