@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -24,6 +25,7 @@ const Dashboard = () => {
               />
             </div>
             <p className="text-muted-foreground">[Your dashboard content here]</p>
+            {/* Add back anything else you had in your dashboard below this line */}
           </CardContent>
         </Card>
       </main>

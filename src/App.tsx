@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,13 +15,13 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NoteDetail from "./pages/NoteDetail";
 import NotFound from "./pages/NotFound";
-import ReactiveBackground from "@/components/ReactiveBackground";
+// import ReactiveBackground from "@/components/ReactiveBackground"; // REMOVE THIS LINE
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <>
-    <ReactiveBackground />
+    {/* Only render ReactiveBackground inside /dashboard using the Dashboard page */}
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
@@ -47,3 +48,4 @@ const App = () => (
 );
 
 export default App;
+
