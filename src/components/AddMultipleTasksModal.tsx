@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface AddMultipleTasksModalProps {
   onAddTasks: (tasks: string[]) => void;
+  buttonLabel?: string;
 }
 
-export default function AddMultipleTasksModal({ onAddTasks }: AddMultipleTasksModalProps) {
+export default function AddMultipleTasksModal({ onAddTasks, buttonLabel = "Add multiple tasks" }: AddMultipleTasksModalProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
 
@@ -25,7 +26,9 @@ export default function AddMultipleTasksModal({ onAddTasks }: AddMultipleTasksMo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" type="button" className="ml-2">Add multiple tasks</Button>
+        <Button variant="outline" size="sm" type="button" className="ml-2">
+          {buttonLabel}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -34,7 +37,7 @@ export default function AddMultipleTasksModal({ onAddTasks }: AddMultipleTasksMo
         <Textarea
           className="w-full"
           rows={6}
-          placeholder="Task 1&#10;Task 2&#10;Task 3"
+          placeholder={"Task 1\nTask 2\nTask 3"}
           value={input}
           onChange={e => setInput(e.target.value)}
         />
@@ -45,3 +48,4 @@ export default function AddMultipleTasksModal({ onAddTasks }: AddMultipleTasksMo
     </Dialog>
   );
 }
+

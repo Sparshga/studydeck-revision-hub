@@ -40,8 +40,9 @@ export default function TodayInfoBox({
   onRemoveEvent,
   onAddTasks,
 }: TodayInfoBoxProps) {
-  const [input, setInput] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Remove input and inputRef, no longer needed for single line add
+  // const [input, setInput] = useState("");
+  // const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="bg-card shadow rounded-lg p-4 flex flex-col min-w-[260px] gap-2">
@@ -115,43 +116,18 @@ export default function TodayInfoBox({
         )}
       </ul>
       
-      {/* Actions (Add/Remove/Multiple) */}
+      {/* Only show the 'AddMultipleTasksModal' as "Add To Do" button */}
       {isSelected && (
         <div className="flex flex-col gap-2 mt-3">
           <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              className="flex-1 border rounded p-1 text-sm"
-              placeholder="Add To Do"
-              onKeyDown={e => {
-                if (e.key === "Enter" && input.trim()) {
-                  onAddEvent(input.trim());
-                  setInput("");
-                  setTimeout(() => inputRef.current?.focus(), 1);
-                }
-              }}
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                if (input.trim()) {
-                  onAddEvent(input.trim());
-                  setInput("");
-                  setTimeout(() => inputRef.current?.focus(), 1);
-                }
-              }}
-              size="sm"
-              className="px-3 h-full"
-            >
-              Add
-            </Button>
-            <AddMultipleTasksModal onAddTasks={onAddTasks} />
+            <AddMultipleTasksModal 
+              onAddTasks={onAddTasks}
+              buttonLabel="Add To Do"
+              />
           </div>
         </div>
       )}
     </div>
   );
 }
+
