@@ -1,7 +1,6 @@
 
 import React from "react";
 
-// Simple vivid bubble colors for best visibility
 const colors = [
   "#FF6B6B", // red
   "#6BCB77", // green
@@ -12,7 +11,6 @@ const colors = [
   "#FFB26B", // orange
 ];
 
-// How long the bubble persists (ms)
 const DURATION = 1000;
 const SIZE = 120;
 
@@ -24,14 +22,15 @@ type Bubble = {
   born: number;
 };
 
-const Bubble: React.FC<{ x: number; y: number; color: string; fading: boolean }> = ({
-  x,
-  y,
-  color,
-  fading,
-}) => (
+const Bubble: React.FC<{
+  x: number;
+  y: number;
+  color: string;
+  fading: boolean;
+  falling: boolean;
+}> = ({ x, y, color, fading, falling }) => (
   <div
-    className={`absolute rounded-full pointer-events-none transition-all duration-700`}
+    className={`absolute rounded-full pointer-events-none`}
     style={{
       left: x - SIZE / 2,
       top: y - SIZE / 2,
@@ -41,17 +40,28 @@ const Bubble: React.FC<{ x: number; y: number; color: string; fading: boolean }>
       opacity: fading ? 0 : 0.7,
       zIndex: 9999,
       boxShadow: `0 0 32px 0 ${color}`,
-      transform: fading ? "scale(1.2)" : "scale(1)",
-      transition: "opacity 0.6s, transform 0.6s",
+      // Animate down
+      transform: falling
+        ? `translateY(200px) scale(${fading ? 1.2 : 1})`
+        : `translateY(0) scale(${fading ? 1.2 : 1})`,
+      transition:
+        "opacity 0.7s, transform 1s cubic-bezier(.48,.18,.24,1.12)", // Smooth fall + fade
+      willChange: "transform, opacity",
     }}
   />
 );
 
-const ReactiveBackground: React.FC = () => {
+interface ReactiveBackgroundProps {
+  bubbleMode: boolean;
+}
+
+const ReactiveBackground: React.FC<ReactiveBackgroundProps> = ({ bubbleMode }) => {
   const [bubbles, setBubbles] = React.useState<Bubble[]>([]);
   const idRef = React.useRef(0);
+  const [falling, setFalling] = React.useState<{ [id: number]: boolean }>({});
 
   React.useEffect(() => {
+    if (!bubbleMode) return; // effect off
     function handleClick(e: MouseEvent) {
       // Ignore click if on form input/button/select/textarea
       if (
@@ -62,7 +72,6 @@ const ReactiveBackground: React.FC = () => {
       ) {
         return;
       }
-      // Pick a random color
       const color = colors[Math.floor(Math.random() * colors.length)];
       const id = idRef.current++;
       setBubbles((prev) => [
@@ -75,19 +84,28 @@ const ReactiveBackground: React.FC = () => {
           born: Date.now(),
         },
       ]);
+      // Start the 'falling' animation a tick later (so transition works)
+      setTimeout(() => {
+        setFalling((old) => ({ ...old, [id]: true }));
+      }, 10);
       // Remove after DURATION+100ms for fade out
       setTimeout(() => {
         setBubbles((prev) => prev.filter((b) => b.id !== id));
+        setFalling((old) => {
+          const { [id]: _, ...rest } = old;
+          return rest;
+        });
       }, DURATION + 100);
     }
     window.addEventListener("mousedown", handleClick);
     return () => window.removeEventListener("mousedown", handleClick);
-  }, []);
+  }, [bubbleMode]);
 
   const now = Date.now();
   const display = bubbles.map((b) => ({
     ...b,
     fading: now - b.born > DURATION * 0.7,
+    falling: Boolean(falling[b.id]),
   }));
 
   return (
@@ -96,18 +114,19 @@ const ReactiveBackground: React.FC = () => {
       style={{ zIndex: 9999 }}
       aria-hidden="true"
     >
-      {display.map((b) => (
-        <Bubble
-          key={b.id}
-          x={b.x}
-          y={b.y}
-          color={b.color}
-          fading={b.fading}
-        />
-      ))}
+      {bubbleMode &&
+        display.map((b) => (
+          <Bubble
+            key={b.id}
+            x={b.x}
+            y={b.y}
+            color={b.color}
+            fading={b.fading}
+            falling={b.falling}
+          />
+        ))}
     </div>
   );
 };
 
 export default ReactiveBackground;
-
