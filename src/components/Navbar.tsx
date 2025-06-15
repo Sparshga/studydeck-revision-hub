@@ -1,6 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import FancyLogoutButton from "@/components/FancyLogoutButton";
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard" },
@@ -19,16 +20,19 @@ const Navbar = () => {
       <Link to="/" className="text-2xl font-bold text-primary">🧠 StudyDeck</Link>
       <div className="flex gap-2">
         {isAuth ? (
-          navItems.map(({ path, label }) => (
-            <Button
-              key={path}
-              asChild
-              variant={location.pathname === path ? "secondary" : "ghost"}
-              size="sm"
-            >
-              <Link to={path}>{label}</Link>
-            </Button>
-          ))
+          <>
+            {navItems.map(({ path, label }) => (
+              <Button
+                key={path}
+                asChild
+                variant={location.pathname === path ? "secondary" : "ghost"}
+                size="sm"
+              >
+                <Link to={path}>{label}</Link>
+              </Button>
+            ))}
+            <FancyLogoutButton />
+          </>
         ) : (
           <>
             <Button asChild variant="ghost" size="sm">
