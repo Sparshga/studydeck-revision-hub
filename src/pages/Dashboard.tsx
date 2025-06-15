@@ -11,6 +11,8 @@ import LabelStatsSection from "@/components/LabelStatsSection";
 import { Select } from "@/components/ui/select";
 import { useState, useMemo } from "react";
 import AddTaskSection from "@/components/AddTaskSection";
+import TodaysTaskList from "@/components/TodaysTaskList";
+import DashboardStatsCard from "@/components/DashboardStatsCard";
 
 // Modified day types (no truancy!)
 type DayType = "work" | "vacation" | "sickness";
@@ -435,7 +437,6 @@ const Dashboard = () => {
                   isSelected={true}
                   onDayTypeChange={handleDayTypeChange}
                   onAddEvent={(taskStr: string) => {
-                    // fallback for adding one (button in modal)
                     handleAddTaskWithLabel(taskStr, pendingClass || undefined);
                   }}
                   onRemoveEvent={enhancedHandleRemoveEvent}
@@ -445,60 +446,40 @@ const Dashboard = () => {
                     );
                   }}
                 />
-                {/* Add task section, below TodayInfoBox */}
                 <AddTaskSection
                   availableLabels={classes}
                   onAddTask={handleAddTaskWithLabel}
                 />
-                {/* Simple list of all today's to-dos (with or without label) */}
-                <div className="mt-2">
-                  <div className="font-semibold text-sm">Today's To Dos:</div>
-                  <ul className="text-sm mt-1 space-y-1">
-                    {(events[todayString] || []).length === 0 ? (
-                      <li className="text-muted-foreground italic">No to-dos yet.</li>
-                    ) : (
-                      events[todayString].map((task, idx) => (
-                        <li key={idx} className="flex gap-2 items-center">
-                          <span>- {task.text}</span>
-                          {task.class && (
-                            <span className="px-2 py-0.5 text-xs bg-muted rounded text-muted-foreground">{task.class}</span>
-                          )}
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </div>
+                <TodaysTaskList tasks={events[todayString] || []} />
               </div>
             </div>
           </CardContent>
         </div>
         {/* STATISTICS DASHBOARD */}
-        <div className="w-full mb-4">
-          <StatsDashboard
-            stats={[
-              {
-                title: selectedDay
-                  ? `Selected (${selectedDay.toLocaleDateString()})`
-                  : `Today (${today.toLocaleDateString()})`,
-                stat: selectedStats, // This ALREADY includes all tasks for selected day, with or without label
-                color: "#2ecc40",
-              },
-              {
-                title: `Month (${(selectedDay ?? today).toLocaleString(undefined, {
-                  month: "long",
-                  year: "numeric",
-                })})`,
-                stat: thisMonthStats,
-                color: "#ffd600",
-              },
-              {
-                title: `Year (${(selectedDay ?? today).getFullYear()})`,
-                stat: thisYearStats,
-                color: "#ffd600",
-              },
-            ]}
-          />
-        </div>
+        <DashboardStatsCard
+          stats={[
+            {
+              title: selectedDay
+                ? `Selected (${selectedDay.toLocaleDateString()})`
+                : `Today (${today.toLocaleDateString()})`,
+              stat: selectedStats, // This includes ALL tasks for selected day, with or without label
+              color: "#2ecc40",
+            },
+            {
+              title: `Month (${(selectedDay ?? today).toLocaleString(undefined, {
+                month: "long",
+                year: "numeric",
+              })})`,
+              stat: thisMonthStats,
+              color: "#ffd600",
+            },
+            {
+              title: `Year (${(selectedDay ?? today).getFullYear()})`,
+              stat: thisYearStats,
+              color: "#ffd600",
+            },
+          ]}
+        />
         <LabelStatsSection classStats={classStats} />
       </div>
 
