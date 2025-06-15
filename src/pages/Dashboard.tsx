@@ -5,6 +5,7 @@ import ProfileCard from "@/components/ProfileCard";
 import ThemeToggle from "@/components/ThemeToggle";
 import DayDetailPopover from "@/components/DayDetailPopover";
 import TodayInfoBox from "@/components/TodayInfoBox";
+import StatsDashboard from "@/components/StatsDashboard";
 import { useState, useMemo } from "react";
 
 // Modified day types (no truancy!)
@@ -29,6 +30,29 @@ function getInitialDoneMap(eventsObj: { [key: string]: string[] }) {
     done[key] = eventsObj[key]?.map(() => false);
   }
   return done;
+}
+
+function getTodoCoverageStats(
+  doneMap: { [key: string]: boolean[] },
+  events: { [key: string]: string[] },
+  range: { start: Date; end: Date }
+): { completed: number; left: number } {
+  let completed = 0, left = 0;
+  const days = [];
+  for (
+    let d = new Date(range.start);
+    d <= range.end;
+    d.setDate(d.getDate() + 1)
+  ) {
+    const dayStr = new Date(d).toDateString();
+    const eventsThisDay = events[dayStr] || [];
+    const doneList = doneMap[dayStr] || [];
+    eventsThisDay.forEach((_, i) => {
+      if (doneList[i]) completed++;
+      else left++;
+    });
+  }
+  return { completed, left };
 }
 
 const Dashboard = () => {
@@ -162,6 +186,36 @@ const Dashboard = () => {
   const isToday = selectedDay
     ? selectedDay.toDateString() === todayString
     : true;
+
+  // Current selected day stats
+  const selectedStats = React.useMemo(() => {
+    const str = selectedDay ? selectedDay.toDateString() : today.toDateString();
+    const eventsList = events[str] || [];
+    const doneList = doneMap[str] || [];
+    let completed = 0,
+      left = 0;
+    eventsList.forEach((_, i) => {
+      if (doneList[i]) completed++;
+      else left++;
+    });
+    return { completed, left };
+  }, [selectedDay, events, doneMap, today]);
+
+  // This month stats
+  const thisMonthStats = React.useMemo(() => {
+    const ref = selectedDay ?? today;
+    const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+    return getTodoCoverageStats(doneMap, events, { start, end });
+  }, [selectedDay, events, doneMap, today]);
+
+  // This year stats
+  const thisYearStats = React.useMemo(() => {
+    const ref = selectedDay ?? today;
+    const start = new Date(ref.getFullYear(), 0, 1);
+    const end = new Date(ref.getFullYear(), 11, 31);
+    return getTodoCoverageStats(doneMap, events, { start, end });
+  }, [selectedDay, events, doneMap, today]);
 
   // Modifier arrays for the calendar
   const mockDays = days;
@@ -311,6 +365,32 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Piechart Statistical Dashboard */}
+        <StatsDashboard
+          stats={[
+            {
+              title: selectedDay
+                ? `Selected (${selectedDay.toLocaleDateString()})`
+                : `Today (${today.toLocaleDateString()})`,
+              stat: selectedStats,
+              color: "#2ecc40",
+            },
+            {
+              title: `Month (${(selectedDay ?? today).toLocaleString(undefined, {
+                month: "long",
+                year: "numeric",
+              })})`,
+              stat: thisMonthStats,
+              color: "#ffd600",
+            },
+            {
+              title: `Year (${(selectedDay ?? today).getFullYear()})`,
+              stat: thisYearStats,
+              color: "#ffd600",
+            },
+          ]}
+        />
       </div>
       {/* Right side profile card */}
       <aside className="w-full lg:max-w-sm flex justify-center">
