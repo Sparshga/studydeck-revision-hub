@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   PieChart,
@@ -79,7 +78,10 @@ const LabelStatsSection: React.FC<LabelStatsSectionProps> = ({ classStats }) => 
                 <div className="font-semibold mb-2 text-md">{labelName}</div>
                 <div className="flex flex-row gap-8 overflow-x-auto">
                   {LABELS.map(({ key, label: timeLabel }) => {
-                    const stat = classStats[labelName][key as keyof typeof classStats[labelName]];
+                    // Use the stats objects safely
+                    const currLabelStats = classStats[labelName];
+                    // Type assertion: currLabelStats is { day: PieStat, month: PieStat, year: PieStat }
+                    const stat = currLabelStats[key as "day" | "month" | "year"];
                     return (
                       <div key={key} className="flex flex-col items-center min-w-[160px]">
                         <span className="font-medium mb-2">{timeLabel}</span>
@@ -106,7 +108,7 @@ const LabelStatsSection: React.FC<LabelStatsSectionProps> = ({ classStats }) => 
                               <Cell key="left" fill={PIE_COLORS[1]} />
                             </Pie>
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend verticalAlign="bottom" height={30}/>
+                            <Legend verticalAlign="bottom" height={30} />
                           </PieChart>
                         </ResponsiveContainer>
                         <span className="mt-2 text-xs text-muted-foreground">
