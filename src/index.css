@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,7 +8,6 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
 
@@ -38,60 +36,52 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    /* Updated to use modern, attractive dark greys */
-    --background: 240 6% 10%;            /* ~#18181b, almost black but with blue/gray */
-    --foreground: 220 14% 96%;           /* ~#f4f4f5, soft light text */
+    /* Much richer, modern dark color palette */
+    --background: 240 8.4% 12%;
+    --foreground: 220 15% 93%;
 
-    --card: 240 6% 14%;                  /* ~#232326, slightly lighter card bg */
-    --card-foreground: 220 14% 96%;      /* as above */
+    --card: 240 10% 15%;
+    --card-foreground: 220 14% 96%;
 
-    --popover: 240 6% 13%;
+    --popover: 240 12% 17%;
     --popover-foreground: 220 14% 96%;
 
-    --primary: 217.2 91.2% 59.8%;        /* accent blue as before */
-    --primary-foreground: 220 14% 96%;
+    --primary: 219 90% 66%;         /* vivid blue accent */
+    --primary-foreground: 220 14% 97%;
+    --secondary: 240 6% 26%;        /* deep muted purple/gray */
+    --secondary-foreground: 220 15% 93%;
 
-    --secondary: 240 4% 18%;             /* ~#2a2a2e */
-    --secondary-foreground: 220 14% 96%;
+    --muted: 244 6% 22%;            /* deeper muted background */
+    --muted-foreground: 223 7% 68%;
 
-    --muted: 240 4% 18%;                 /* as above */
-    --muted-foreground: 220 8% 60%;      /* muted light grey */
+    --accent: 235 13% 25%;          /* subtle accent bg */
+    --accent-foreground: 210 18% 89%;
 
-    --accent: 231 7% 19%;                /* ~#282a36 */
-    --accent-foreground: 220 14% 96%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 220 15% 93%;
 
-    --destructive: 0 62.8% 45.6%;        /* softer red */
-    --destructive-foreground: 220 14% 96%;
+    --border: 240 7% 23%;
+    --input: 244 7% 17%;
+    --ring: 219 90% 66%;
 
-    --border: 240 6% 14%;                /* same as card bg, subtle */
-    --input: 240 4% 18%;                 /* as muted */
-    --ring: 217.2 91.2% 59.8%;
-
-    --sidebar-background: 240 6% 13%;    /* slightly lighter than main bg */
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-background: 240 10% 16%;
+    --sidebar-foreground: 220 16% 90%;
+    --sidebar-primary: 217 93% 69%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 231 7% 19%;
+    --sidebar-accent: 231 7% 27%;
     --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 240 4% 18%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-border: 240 7% 24%;
+    --sidebar-ring: 219 90% 66%;
   }
 }
 
