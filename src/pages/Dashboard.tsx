@@ -6,6 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import DayDetailPopover from "@/components/DayDetailPopover";
 import TodayInfoBox from "@/components/TodayInfoBox";
 import StatsDashboard from "@/components/StatsDashboard";
+import ClassManager from "@/components/ClassManager";
 import { useState, useMemo } from "react";
 
 // Modified day types (no truancy!)
@@ -23,7 +24,9 @@ function getInitialDays() {
   return result;
 }
 
-function getInitialDoneMap(eventsObj: { [key: string]: string[] }) {
+type TaskItem = { text: string; class?: string };
+
+function getInitialDoneMap(eventsObj: { [key: string]: TaskItem[] }) {
   // Initialize each day to an empty array matching the number of events for that day
   const done: { [key: string]: boolean[] } = {};
   for (const key in eventsObj) {
@@ -34,11 +37,11 @@ function getInitialDoneMap(eventsObj: { [key: string]: string[] }) {
 
 function getTodoCoverageStats(
   doneMap: { [key: string]: boolean[] },
-  events: { [key: string]: string[] },
-  range: { start: Date; end: Date }
+  events: { [key: string]: TaskItem[] },
+  range: { start: Date; end: Date },
+  classFilter?: string
 ): { completed: number; left: number } {
   let completed = 0, left = 0;
-  const days = [];
   for (
     let d = new Date(range.start);
     d <= range.end;
@@ -47,7 +50,9 @@ function getTodoCoverageStats(
     const dayStr = new Date(d).toDateString();
     const eventsThisDay = events[dayStr] || [];
     const doneList = doneMap[dayStr] || [];
-    eventsThisDay.forEach((_, i) => {
+    eventsThisDay.forEach((task, i) => {
+      if (classFilter && task.class !== classFilter) return;
+      if (!classFilter && task.class) return; // exclude class-assigned tasks in "all tasks"
       if (doneList[i]) completed++;
       else left++;
     });
@@ -59,7 +64,7 @@ const Dashboard = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [displayMonth, setDisplayMonth] = useState<Date>(new Date()); // for calendar view
   const [days, setDays] = useState<{ [key: string]: DayType }>(getInitialDays);
-  const [events, setEvents] = useState<{ [key: string]: string[] }>({});
+  const [events, setEvents] = useState<{ [key: string]: TaskItem[] }>({});
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
 
@@ -71,7 +76,7 @@ const Dashboard = () => {
   // The selected date string and info
   const selectedString = selectedDay?.toDateString() ?? "";
   const selectedType: DayType = days[selectedString] || "work";
-  const selectedEvents: string[] = events[selectedString] || [];
+  const selectedEvents: string[] = (events[selectedString] || []).map(ev => ev.text);
 
   // Only today's string and data
   const today = new Date();
@@ -109,9 +114,11 @@ const Dashboard = () => {
     if (selectedDay) {
       const dayStr = selectedDay.toDateString();
       setEvents((prev) => {
+        const newTask: TaskItem = { text: event };
+        if (pendingClass) newTask.class = pendingClass;
         const newEvents = {
           ...prev,
-          [dayStr]: [...(prev[dayStr] || []), event],
+          [dayStr]: [...(prev[dayStr] || []), newTask],
         };
         // Add new doneMap entry for new event
         setDoneMap((dPrev) => ({
@@ -120,6 +127,7 @@ const Dashboard = () => {
         }));
         return newEvents;
       });
+      setPendingClass(""); // reset after add
     }
   };
 
@@ -194,7 +202,8 @@ const Dashboard = () => {
     const doneList = doneMap[str] || [];
     let completed = 0,
       left = 0;
-    eventsList.forEach((_, i) => {
+    eventsList.forEach((task, i) => {
+      if (task.class) return; // skip tasks with a class
       if (doneList[i]) completed++;
       else left++;
     });
@@ -228,6 +237,50 @@ const Dashboard = () => {
 
   // Pass if currently selected (side panel correlates with selectedDay)
   const isSelected = true;
+
+  // class add/remove
+  const [classes, setClasses] = useState<string[]>([]);
+  const handleAddClass = (c: string) =>
+    setClasses(prev => prev.includes(c) ? prev : [...prev, c]);
+  const handleDeleteClass = (c: string) => setClasses(prev => prev.filter(x => x !== c));
+
+  // Extract class list for dropdown
+  const classOptions = classes;
+
+  // --- When adding a task, select a class (optional) ---
+  const [pendingClass, setPendingClass] = useState<string>("");
+
+  // For per-class stats
+  const classStats = React.useMemo(() => {
+    const result: { [key: string]: { day: PieStat; month: PieStat; year: PieStat } } = {};
+    for (const c of classes) {
+      // 1. Selected date
+      const str = selectedDay ? selectedDay.toDateString() : today.toDateString();
+      const eventsList = events[str] || [];
+      const doneList = doneMap[str] || [];
+      let completed = 0,
+        left = 0;
+      eventsList.forEach((task, i) => {
+        if (task.class !== c) return;
+        if (doneList[i]) completed++;
+        else left++;
+      });
+      const dayStat = { completed, left };
+
+      // This month
+      const ref = selectedDay ?? today;
+      const startM = new Date(ref.getFullYear(), ref.getMonth(), 1);
+      const endM = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+      const monthStat = getTodoCoverageStats(doneMap, events, { start: startM, end: endM }, c);
+
+      // This year
+      const startY = new Date(ref.getFullYear(), 0, 1);
+      const endY = new Date(ref.getFullYear(), 11, 31);
+      const yearStat = getTodoCoverageStats(doneMap, events, { start: startY, end: endY }, c);
+      result[c] = { day: dayStat, month: monthStat, year: yearStat };
+    }
+    return result;
+  }, [classes, selectedDay, events, doneMap, today]);
 
   return (
     <main className="min-h-[90vh] w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 bg-white p-2 sm:p-8">
@@ -270,6 +323,13 @@ const Dashboard = () => {
           <CardContent className="flex flex-col gap-2 pt-0 pb-6 px-6">
             <div className="text-muted-foreground mb-2 text-sm">
               Overview of your work schedule this month
+            </div>
+            <div className="mb-4">
+              <ClassManager
+                classes={classes}
+                onAddClass={handleAddClass}
+                onDeleteClass={handleDeleteClass}
+              />
             </div>
             <div className="border rounded-lg p-2 bg-white shadow-sm overflow-x-auto pointer-events-auto flex flex-col sm:flex-row gap-4">
               {/* CALENDAR */}

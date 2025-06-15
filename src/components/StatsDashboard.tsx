@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   PieChart,
@@ -24,6 +23,7 @@ type StatData = {
 
 type StatsDashboardProps = {
   stats: StatData[];
+  label?: string;
 };
 
 const COLORS = [
@@ -47,9 +47,12 @@ const CustomTooltip = ({
   return null;
 };
 
-const StatsDashboard: React.FC<StatsDashboardProps> = ({ stats }) => {
+const StatsDashboard: React.FC<StatsDashboardProps> = ({ stats, label }) => {
   return (
     <section className="w-full mt-8">
+      {label && (
+        <div className="font-semibold text-lg mb-2">{label}</div>
+      )}
       <Card className="w-full shadow-md">
         <CardHeader className="flex flex-row items-center gap-3 pb-2">
           <ChartPie className="w-6 h-6 text-yellow-500" />
