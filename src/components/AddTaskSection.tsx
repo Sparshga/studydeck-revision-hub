@@ -67,10 +67,11 @@ const AddTaskSection: React.FC<AddTaskSectionProps> = ({
         ) : (
           <div className="text-xs text-muted-foreground px-2 py-1">No labels</div>
         )}
-        <Button size="sm" type="submit">Add Task</Button>
+        <Button size="sm" type="submit">Add To Do</Button>
       </div>
     </form>
   );
 };
 
 export default AddTaskSection;
+

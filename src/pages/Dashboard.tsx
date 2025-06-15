@@ -450,6 +450,24 @@ const Dashboard = () => {
                   availableLabels={classes}
                   onAddTask={handleAddTaskWithLabel}
                 />
+                {/* Simple list of all today's to-dos (with or without label) */}
+                <div className="mt-2">
+                  <div className="font-semibold text-sm">Today's To Dos:</div>
+                  <ul className="text-sm mt-1 space-y-1">
+                    {(events[todayString] || []).length === 0 ? (
+                      <li className="text-muted-foreground italic">No to-dos yet.</li>
+                    ) : (
+                      events[todayString].map((task, idx) => (
+                        <li key={idx} className="flex gap-2 items-center">
+                          <span>- {task.text}</span>
+                          {task.class && (
+                            <span className="px-2 py-0.5 text-xs bg-muted rounded text-muted-foreground">{task.class}</span>
+                          )}
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -462,7 +480,7 @@ const Dashboard = () => {
                 title: selectedDay
                   ? `Selected (${selectedDay.toLocaleDateString()})`
                   : `Today (${today.toLocaleDateString()})`,
-                stat: selectedStats,
+                stat: selectedStats, // This ALREADY includes all tasks for selected day, with or without label
                 color: "#2ecc40",
               },
               {
