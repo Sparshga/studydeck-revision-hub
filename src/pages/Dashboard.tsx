@@ -176,7 +176,9 @@ const Dashboard = () => {
   const isSelected = true;
 
   return (
-    <main className="min-h-[90vh] w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 bg-gradient-to-br from-[#f7f7fb] via-[#fefefe] to-[#fefefe] p-2 sm:p-8">
+    <main className="min-h-[90vh] w-full flex flex-col lg:flex-row items-stretch justify-center gap-8
+      bg-gradient-to-br from-[#f8f8f8] via-[#fffbe6] to-[#ffe484]
+      p-2 sm:p-8">
       {/* Main content (calendar) */}
       <div className="flex-1 flex min-w-0 flex-col items-center gap-6">
         <div className="self-end">
