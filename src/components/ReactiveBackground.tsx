@@ -1,87 +1,117 @@
 
 import React, { useEffect, useRef } from "react";
 
-const blobColors = [
-  "rgba(20,20,20,0.7)",
-  "rgba(40,40,40,0.6)",
-  "rgba(60,60,60,0.4)",
-  "rgba(30,30,30,0.5)"
+// Colorful palettes for light/dark mode
+const pastelColors = [
+  "rgba(255, 180, 120, 0.55)", // orange
+  "rgba(150, 200, 255, 0.55)", // light blue
+  "rgba(190, 255, 170, 0.53)", // green
+  "rgba(255, 170, 230, 0.45)", // pink-purple
+  "rgba(220, 250, 160, 0.45)", // yellow-green
+];
+const darkColors = [
+  "rgba(20,20,30,0.7)",
+  "rgba(44,44,60,0.6)",
+  "rgba(25,25,50,0.5)",
+  "rgba(40,40,80,0.38)",
+  "rgba(65,65,90,0.42)"
 ];
 
-const numBlobs = 4;
+const numBubbles = 5;
+const baseSize = 170;
 
-const blobSize = 380;
-
-const Blob = ({
+// Bubbles pulse in size when clicked
+const Bubble = ({
   x,
   y,
   color,
+  pulsed,
   style,
 }: {
   x: number;
   y: number;
   color: string;
+  pulsed?: boolean;
   style?: React.CSSProperties;
 }) => (
   <div
-    className="absolute rounded-full pointer-events-none mix-blend-lighten blur-3xl transition-transform duration-300"
+    className="absolute rounded-full pointer-events-none mix-blend-lighten transition-all duration-300"
     style={{
-      left: x - blobSize / 2,
-      top: y - blobSize / 2,
-      width: blobSize,
-      height: blobSize,
+      left: x - baseSize / 2,
+      top: y - baseSize / 2,
+      width: baseSize,
+      height: baseSize,
       background: color,
-      boxShadow: "0 0 120px 0 rgba(0,0,0,0.9)",
+      filter: `blur(14px) opacity(0.54) drop-shadow(0 0 42px ${color})`,
+      boxShadow: "0 0 80px 0 rgba(0,0,0,0.12)",
+      transform: pulsed ? "scale(1.18)" : "scale(1)",
       ...style,
     }}
   />
 );
 
 const ReactiveBackground: React.FC = () => {
-  const [blobs, setBlobs] = React.useState(
-    Array.from({ length: numBlobs }, () => ({
+  const [bubbles, setBubbles] = React.useState(
+    Array.from({ length: numBubbles }, () => ({
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
+      pulsed: false,
     }))
   );
 
-  // Store stable movement for smoothness
+  // Hold animation frame
   const requestRef = useRef<number>();
-
-  // Store target position for each blob
+  // Track targets for each bubble
   const targets = useRef(
-    Array.from({ length: numBlobs }, () => ({
+    Array.from({ length: numBubbles }, () => ({
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
     }))
   );
 
-  // Mouse tracking
+  // Use system theme or html class for mode
+  const [mode, setMode] = React.useState<"light" | "dark">("light");
   useEffect(() => {
-    function handleMouseMove(e: MouseEvent) {
-      // Each blob targets mouse + slightly different offset for a parallax effect
-      for (let i = 0; i < numBlobs; i++) {
+    const updateTheme = () => {
+      // Use html class as main source
+      const isDark = document.documentElement.classList.contains("dark");
+      setMode(isDark ? "dark" : "light");
+    };
+    updateTheme();
+    const obs = new MutationObserver(updateTheme);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+
+  // Mouse moves make bubbles follow with offsets for parallax
+  useEffect(() => {
+    function handleMove(e: MouseEvent) {
+      for (let i = 0; i < numBubbles; i++) {
+        // Circular offsets for distributed motion
+        const angle = (i / numBubbles) * Math.PI * 2;
+        const offsetX = Math.cos(angle) * 110 + Math.sin(e.clientY * 0.001 + i) * 18;
+        const offsetY = Math.sin(angle) * 110 + Math.cos(e.clientX * 0.001 + i) * 14;
         targets.current[i] = {
-          x: e.clientX + Math.sin(i * 2) * 120,
-          y: e.clientY + Math.cos(i * 2) * 120,
+          x: e.clientX + offsetX,
+          y: e.clientY + offsetY,
         };
       }
     }
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
   }, []);
 
-  // Animate the blobs smoothly towards their targets
+  // Animate them smoothly toward targets
   useEffect(() => {
     const animate = () => {
-      setBlobs((prev) =>
-        prev.map((blob, i) => {
+      setBubbles((prev) =>
+        prev.map((b, i) => {
           const tx = targets.current[i].x;
           const ty = targets.current[i].y;
-          // Lerp for smooth, slightly lagging movement
           return {
-            x: blob.x + (tx - blob.x) * (0.06 + 0.025 * i),
-            y: blob.y + (ty - blob.y) * (0.06 + 0.018 * i),
+            ...b,
+            x: b.x + (tx - b.x) * (0.09 + 0.02 * i),
+            y: b.y + (ty - b.y) * (0.09 + 0.01 * i),
           };
         })
       );
@@ -93,16 +123,17 @@ const ReactiveBackground: React.FC = () => {
     };
   }, []);
 
-  // Responsive: center blobs on window resize
+  // Responsive center
   useEffect(() => {
     function handleResize() {
-      setBlobs(
-        Array.from({ length: numBlobs }, () => ({
+      setBubbles(
+        Array.from({ length: numBubbles }, () => ({
           x: window.innerWidth / 2,
           y: window.innerHeight / 2,
+          pulsed: false,
         }))
       );
-      targets.current = Array.from({ length: numBlobs }, () => ({
+      targets.current = Array.from({ length: numBubbles }, () => ({
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
       }));
@@ -111,28 +142,38 @@ const ReactiveBackground: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Only show in dark mode
-  const html = document?.documentElement;
-  const isDark = html && html.classList.contains("dark");
+  // Pulse effect on click: All bubbles scale up for 250ms
+  useEffect(() => {
+    function handleClick() {
+      setBubbles((prev) => prev.map((b) => ({ ...b, pulsed: true })));
+      setTimeout(() => {
+        setBubbles((prev) => prev.map((b) => ({ ...b, pulsed: false })));
+      }, 250);
+    }
+    window.addEventListener("mousedown", handleClick);
+    return () => window.removeEventListener("mousedown", handleClick);
+  }, []);
 
-  if (!isDark) return null;
+  // Pick palette based on mode
+  const palette = mode === "dark" ? darkColors : pastelColors;
 
   return (
     <div
       className="fixed inset-0 -z-10 pointer-events-none select-none"
       aria-hidden="true"
     >
-      {blobs.map((blob, i) => (
-        <Blob
+      {bubbles.map((bubble, i) => (
+        <Bubble
           key={i}
-          x={blob.x}
-          y={blob.y}
-          color={blobColors[i % blobColors.length]}
+          x={bubble.x}
+          y={bubble.y}
+          color={palette[i % palette.length]}
+          pulsed={bubble.pulsed}
           style={{
-            filter: `blur(${26 + i * 6}px) opacity(${
-              0.23 + i * 0.11
-            })`,
-            transition: "filter 0.4s, box-shadow 0.4s",
+            filter: `blur(${15 + i * 3}px) opacity(${
+              0.35 + i * 0.14
+            }) drop-shadow(0 0 62px ${palette[i % palette.length]})`,
+            transition: "filter 0.44s, box-shadow 0.43s, transform 0.26s",
           }}
         />
       ))}
