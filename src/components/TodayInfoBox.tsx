@@ -1,7 +1,10 @@
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import AddMultipleTasksModal from "./AddMultipleTasksModal";
 
 type DayType = "work" | "vacation" | "sickness";
 const colorMap: Record<DayType, string> = {
@@ -17,6 +20,11 @@ interface TodayInfoBoxProps {
   doneMap: boolean[];
   onToggleDone: (eventIdx: number) => void;
   isToday: boolean;
+  isSelected: boolean;
+  onDayTypeChange: (t: DayType) => void;
+  onAddEvent: (e: string) => void;
+  onRemoveEvent: (i: number) => void;
+  onAddTasks: (tasks: string[]) => void;
 }
 
 export default function TodayInfoBox({
@@ -26,17 +34,52 @@ export default function TodayInfoBox({
   doneMap,
   onToggleDone,
   isToday,
+  isSelected,
+  onDayTypeChange,
+  onAddEvent,
+  onRemoveEvent,
+  onAddTasks,
 }: TodayInfoBoxProps) {
+  const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className="bg-card shadow rounded-lg p-4 flex flex-col min-w-[260px] gap-2">
       <div className="flex items-center mb-1">
         <div className={`px-2 py-1 rounded text-xs font-semibold capitalize ${colorMap[dayType]}`}>
           {dayType}
         </div>
-        <div className="ml-auto font-medium text-xs text-muted-foreground">{date.toLocaleDateString()}</div>
+        <div className="ml-auto font-medium text-xs text-muted-foreground">
+          {date.toLocaleDateString()}
+        </div>
       </div>
+      {/* Day type selector, show if selected */}
+      {isSelected && (
+        <div className="mb-2">
+          <div className="text-xs text-muted-foreground mb-1">Change Day Type</div>
+          <RadioGroup
+            value={dayType}
+            onValueChange={(val) => onDayTypeChange(val as DayType)}
+            className="flex gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="work" id="side-work" />
+              <label htmlFor="side-work" className="text-yellow-700 cursor-pointer">Work</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="vacation" id="side-vacation" />
+              <label htmlFor="side-vacation" className="text-gray-700 cursor-pointer">Vacation</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="sickness" id="side-sickness" />
+              <label htmlFor="side-sickness" className="text-red-700 cursor-pointer">Sickness</label>
+            </div>
+          </RadioGroup>
+        </div>
+      )}
+
       <div className="text-xs text-muted-foreground mb-1">
-        {isToday ? "Events for today:" : `Events for ${date.toLocaleDateString()}:`}
+        Events for {isToday ? "today" : date.toLocaleDateString()}:
       </div>
       <ul className="space-y-1">
         {events.length ? (
@@ -53,6 +96,16 @@ export default function TodayInfoBox({
                 <Check size={18} color="green" className="mr-1" />
               )}
               <span className={doneMap[i] ? "line-through text-gray-400" : ""}>{e}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto text-destructive"
+                onClick={() => onRemoveEvent(i)}
+                aria-label="Remove"
+                title="Remove"
+              >
+                ✕
+              </Button>
             </li>
           ))
         ) : (
@@ -61,7 +114,44 @@ export default function TodayInfoBox({
           </li>
         )}
       </ul>
+      
+      {/* Actions (Add/Remove/Multiple) */}
+      {isSelected && (
+        <div className="flex flex-col gap-2 mt-3">
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              className="flex-1 border rounded p-1 text-sm"
+              placeholder="Add To Do"
+              onKeyDown={e => {
+                if (e.key === "Enter" && input.trim()) {
+                  onAddEvent(input.trim());
+                  setInput("");
+                  setTimeout(() => inputRef.current?.focus(), 1);
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                if (input.trim()) {
+                  onAddEvent(input.trim());
+                  setInput("");
+                  setTimeout(() => inputRef.current?.focus(), 1);
+                }
+              }}
+              size="sm"
+              className="px-3 h-full"
+            >
+              Add
+            </Button>
+            <AddMultipleTasksModal onAddTasks={onAddTasks} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

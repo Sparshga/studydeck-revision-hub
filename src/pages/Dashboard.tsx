@@ -172,6 +172,9 @@ const Dashboard = () => {
     today: [today],
   };
 
+  // Pass if currently selected (side panel correlates with selectedDay)
+  const isSelected = true;
+
   return (
     <main className="min-h-[90vh] w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 bg-gradient-to-br from-[#f7f7fb] via-[#fefefe] to-[#fefefe] p-2 sm:p-8">
       {/* Main content (calendar) */}
@@ -289,7 +292,7 @@ const Dashboard = () => {
                 onAddEvent={enhancedHandleAddEvent}
                 onRemoveEvent={enhancedHandleRemoveEvent}
               />
-              {/* Now shows info for selected day */}
+              {/* Now shows info for selected day, and passes new handlers */}
               <div className="min-w-[280px]">
                 <TodayInfoBox
                   dayType={infoBoxDayType}
@@ -298,6 +301,11 @@ const Dashboard = () => {
                   doneMap={infoBoxDoneMap}
                   onToggleDone={handleToggleDone}
                   isToday={isToday}
+                  isSelected={true}
+                  onDayTypeChange={handleDayTypeChange}
+                  onAddEvent={enhancedHandleAddEvent}
+                  onRemoveEvent={enhancedHandleRemoveEvent}
+                  onAddTasks={(tasks: string[]) => tasks.forEach(enhancedHandleAddEvent)}
                 />
               </div>
             </div>
