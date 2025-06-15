@@ -147,14 +147,15 @@ const Dashboard = () => {
                         nav_button_next: "absolute right-1",
                         table: "w-full border-collapse space-y-1",
                         head_row: "flex",
-                        head_cell:
-                          "text-muted-foreground w-9 font-normal text-[0.8rem]",
-                        cell: "h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
-                        day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                        head_cell: "text-muted-foreground w-9 font-normal text-[0.8rem]",
+                        // Make each day cell slightly rounded (squares with rounded edges)
+                        cell: "h-9 w-9 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20",
+                        // Style each day button (still square, slightly rounded)
+                        day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-md",
                         day_range_end: "day-range-end",
                         day_selected:
-                          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                        day_today: "bg-accent text-accent-foreground",
+                          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-md",
+                        day_today: "bg-accent text-accent-foreground rounded-md",
                         day_outside:
                           "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
                         day_disabled: "text-muted-foreground opacity-50",
@@ -164,10 +165,10 @@ const Dashboard = () => {
                       }}
                       modifiers={modifiers}
                       modifiersClassNames={{
-                        work: "bg-yellow-400 text-white",
-                        vacation: "bg-gray-300 text-gray-800",
-                        sickness: "bg-red-300 text-gray-900",
-                        today: "ring-2 ring-primary ring-offset-2 font-bold"
+                        work: "bg-yellow-400 text-white rounded-md",
+                        vacation: "bg-gray-300 text-gray-800 rounded-md",
+                        sickness: "bg-red-300 text-gray-900 rounded-md",
+                        today: "ring-2 ring-primary ring-offset-2 font-bold rounded-md"
                       }}
                       fromDate={new Date(new Date().getFullYear(), new Date().getMonth(), 1)}
                       toDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)}
@@ -175,9 +176,15 @@ const Dashboard = () => {
                       disabled={() => false}
                     />
                     <div className="flex gap-4 mt-4 px-2 text-xs items-center">
-                      <span className="flex gap-1 items-center"><span className="w-3 h-3 bg-yellow-400 inline-block"></span>Work</span>
-                      <span className="flex gap-1 items-center"><span className="w-3 h-3 bg-gray-300 inline-block"></span>Vacation</span>
-                      <span className="flex gap-1 items-center"><span className="w-3 h-3 bg-red-300 inline-block"></span>Sickness</span>
+                      <span className="flex gap-1 items-center">
+                        <span className="w-3 h-3 bg-yellow-400 inline-block rounded-md"></span>Work
+                      </span>
+                      <span className="flex gap-1 items-center">
+                        <span className="w-3 h-3 bg-gray-300 inline-block rounded-md"></span>Vacation
+                      </span>
+                      <span className="flex gap-1 items-center">
+                        <span className="w-3 h-3 bg-red-300 inline-block rounded-md"></span>Sickness
+                      </span>
                       <span className="ml-auto text-[0.9em] text-muted-foreground">Today</span>
                     </div>
                   </div>
