@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -46,42 +47,44 @@
   }
 
   .dark {
-    /* Much richer, modern dark color palette */
-    --background: 240 8.4% 12%;
-    --foreground: 220 15% 93%;
+    /* Updated: Use only shades of near-black and dark grays with depth, no white. */
+    --background: 220 7% 8%;                  /* Almost black */
+    --foreground: 220 10% 80%;                /* Light gray text for contrast */
+    --card: 220 7% 10%;                       /* Slightly lighter than bg */
+    --card-foreground: 220 10% 80%;           /* Same as foreground */
 
-    --card: 240 10% 15%;
-    --card-foreground: 220 14% 96%;
+    --popover: 220 6% 12%;                    /* Slightly lighter than card/bg */
+    --popover-foreground: 220 10% 78%;
 
-    --popover: 240 12% 17%;
-    --popover-foreground: 220 14% 96%;
+    --primary: 220 20% 22%;                   /* Deep charcoal for main accents */
+    --primary-foreground: 0 0% 92%;           /* Near-white text for high contrast (optional), can be gray */
 
-    --primary: 219 90% 66%;         /* vivid blue accent */
-    --primary-foreground: 220 14% 97%;
-    --secondary: 240 6% 26%;        /* deep muted purple/gray */
-    --secondary-foreground: 220 15% 93%;
+    --secondary: 220 10% 14%;                 /* Slightly elevated section */
+    --secondary-foreground: 220 18% 78%;
 
-    --muted: 244 6% 22%;            /* deeper muted background */
-    --muted-foreground: 223 7% 68%;
+    --muted: 220 7% 16%;                      /* Even lighter surface */
+    --muted-foreground: 220 8% 57%;
 
-    --accent: 235 13% 25%;          /* subtle accent bg */
-    --accent-foreground: 210 18% 89%;
+    --accent: 220 13% 12%;                    /* For borders/highlights */
+    --accent-foreground: 220 15% 87%;
 
-    --destructive: 0 72% 45%;
-    --destructive-foreground: 220 15% 93%;
+    --destructive: 0 65% 40%;                 /* Dark red */
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 240 7% 23%;
-    --input: 244 7% 17%;
-    --ring: 219 90% 66%;
+    --border: 220 4% 18%;                     /* Dark gray borders */
+    --input: 220 5% 13%;                      /* Input background shade */
+    --ring: 220 9% 28%;                       /* Subtle accent ring */
 
-    --sidebar-background: 240 10% 16%;
-    --sidebar-foreground: 220 16% 90%;
-    --sidebar-primary: 217 93% 69%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 231 7% 27%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 240 7% 24%;
-    --sidebar-ring: 219 90% 66%;
+    --radius: 0.5rem;
+
+    --sidebar-background: 220 7% 10%;         /* Same as card/background, very dark */
+    --sidebar-foreground: 220 13% 78%;
+    --sidebar-primary: 220 20% 22%;
+    --sidebar-primary-foreground: 0 0% 92%;
+    --sidebar-accent: 220 9% 18%;
+    --sidebar-accent-foreground: 220 10% 78%;
+    --sidebar-border: 220 4% 18%;
+    --sidebar-ring: 220 9% 28%;
   }
 }
 
@@ -94,3 +97,4 @@
     @apply bg-background text-foreground;
   }
 }
+
