@@ -8,6 +8,7 @@ import TodayInfoBox from "@/components/TodayInfoBox";
 import StatsDashboard from "@/components/StatsDashboard";
 import ClassManager from "@/components/ClassManager";
 import LabelStatsSection from "@/components/LabelStatsSection";
+import { Select } from "@/components/ui/select";
 import { useState, useMemo } from "react";
 
 // Modified day types (no truancy!)
@@ -113,13 +114,14 @@ const Dashboard = () => {
     }
   };
 
-  // Extend onAddEvent for doneMap
-  const enhancedHandleAddEvent = (event: string) => {
+  // Extend onAddEvent for doneMap, now supports class
+  const enhancedHandleAddEvent = (event: string, labelOverride?: string) => {
     if (selectedDay) {
       const dayStr = selectedDay.toDateString();
       setEvents((prev) => {
         const newTask: TaskItem = { text: event };
-        if (pendingClass) newTask.class = pendingClass;
+        if (typeof labelOverride === "string") newTask.class = labelOverride;
+        else if (pendingClass) newTask.class = pendingClass;
         const newEvents = {
           ...prev,
           [dayStr]: [...(prev[dayStr] || []), newTask],
@@ -410,24 +412,68 @@ const Dashboard = () => {
                 dayType={selectedType}
                 onDayTypeChange={handleDayTypeChange}
                 events={selectedEvents}
-                onAddEvent={enhancedHandleAddEvent}
+                // Update addEvent to show label picker before adding
+                onAddEvent={() => {}}
                 onRemoveEvent={enhancedHandleRemoveEvent}
-              />
+                // ... keep other props ...
+              >
+                {/* No children */}
+              </DayDetailPopover>
               {/* Now shows info for selected day, and passes new handlers */}
-              <div className="min-w-[280px]">
+              <div className="min-w-[320px]">
                 <TodayInfoBox
                   dayType={infoBoxDayType}
-                  events={infoBoxEvents}
+                  events={selectedEvents}
                   date={infoBoxDate}
                   doneMap={infoBoxDoneMap}
                   onToggleDone={handleToggleDone}
                   isToday={isToday}
                   isSelected={true}
                   onDayTypeChange={handleDayTypeChange}
-                  onAddEvent={enhancedHandleAddEvent}
+                  // Custom onAddEvent supports label selection
+                  onAddEvent={(taskStr: string) => {
+                    if (!classes.length) {
+                      enhancedHandleAddEvent(taskStr, undefined);
+                    } else {
+                      // Show prompt for user to select label if not set
+                      if (!pendingClass) {
+                        // Default: assign first class if only one
+                        setPendingClass(classes[0]);
+                      }
+                      enhancedHandleAddEvent(taskStr, pendingClass || classes[0]);
+                    }
+                  }}
                   onRemoveEvent={enhancedHandleRemoveEvent}
-                  onAddTasks={(tasks: string[]) => tasks.forEach(enhancedHandleAddEvent)}
+                  onAddTasks={(tasks: string[]) => {
+                    tasks.forEach(task => enhancedHandleAddEvent(task, pendingClass || classes[0]));
+                  }}
+                  // Pass class list and selected class to info box
+                  availableClasses={classes}
+                  pendingClass={pendingClass}
+                  setPendingClass={setPendingClass}
+                  eventsData={events[selectedString] || []}
                 />
+                {/* Below: Label/class selector for new task */}
+                {classes.length > 0 && (
+                  <div className="mt-4">
+                    <label htmlFor="newtask-class" className="text-xs font-medium text-muted-foreground mb-1">
+                      Assign label to new task:
+                    </label>
+                    <select
+                      id="newtask-class"
+                      className="border bg-white py-1 px-2 rounded min-w-[100px] text-sm"
+                      value={pendingClass}
+                      onChange={e => setPendingClass(e.target.value)}
+                    >
+                      <option value="">No label</option>
+                      {classes.map(c => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

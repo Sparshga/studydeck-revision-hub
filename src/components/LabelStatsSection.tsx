@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   PieChart,
@@ -10,12 +11,37 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tag } from "lucide-react";
 
-const COLORS = [
-  "#0057d6", // Today: blue
-  "#2ecc40", // Completed: green
-  "#ffd600", // Left: yellow
-  "#ff6484", // Year: pink/red
-];
+// Custom label rendering for better visibility
+const renderCustomLabel = (props: any) => {
+  const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props;
+  // calculate label position
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.7;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  if (props.value === 0) return null; // Don't render for zero segments
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#122132"
+      fontSize="16"
+      fontWeight="bold"
+      textAnchor="middle"
+      dominantBaseline="central"
+      stroke="white"
+      strokeWidth={1}
+      style={{
+        filter: "drop-shadow(1px 1px 2px #fff9)",
+      }}
+    >
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+};
+
+const PIE_COLORS = ["#2ecc40", "#ffd600"]; // Green for completed, yellow for left
 
 type PieStat = {
   completed: number;
@@ -55,8 +81,6 @@ const LABELS = [
   { key: "year", label: "Year" },
 ];
 
-const PIE_COLORS = ["#2ecc40", "#ffd600"]; // Green for completed, yellow for left
-
 const LabelStatsSection: React.FC<LabelStatsSectionProps> = ({ classStats }) => {
   const labelNames = Object.keys(classStats);
 
@@ -78,9 +102,7 @@ const LabelStatsSection: React.FC<LabelStatsSectionProps> = ({ classStats }) => 
                 <div className="font-semibold mb-2 text-md">{labelName}</div>
                 <div className="flex flex-row gap-8 overflow-x-auto">
                   {LABELS.map(({ key, label: timeLabel }) => {
-                    // Use the stats objects safely
                     const currLabelStats = classStats[labelName];
-                    // Type assertion: currLabelStats is { day: PieStat, month: PieStat, year: PieStat }
                     const stat = currLabelStats[key as "day" | "month" | "year"];
                     return (
                       <div key={key} className="flex flex-col items-center min-w-[160px]">
@@ -98,11 +120,8 @@ const LabelStatsSection: React.FC<LabelStatsSectionProps> = ({ classStats }) => 
                               outerRadius={55}
                               paddingAngle={2}
                               dataKey="value"
-                              label={({ name, percent }) =>
-                                stat.completed + stat.left > 0
-                                  ? `${Math.round(percent * 100)}%`
-                                  : ""
-                              }
+                              label={renderCustomLabel}
+                              labelLine={false}
                             >
                               <Cell key="completed" fill={PIE_COLORS[0]} />
                               <Cell key="left" fill={PIE_COLORS[1]} />
