@@ -124,7 +124,7 @@ export default function TodayInfoBox({
           <div className="flex gap-2">
             <AddMultipleTasksModal 
               onAddTasks={onAddTasks}
-              buttonLabel="Add To Do"
+              buttonLabel="Add multiple To Dos"
             />
           </div>
         </div>
