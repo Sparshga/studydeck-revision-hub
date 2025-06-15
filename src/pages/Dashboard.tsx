@@ -60,7 +60,6 @@ function getTodoCoverageStats(
     const doneList = doneMap[dayStr] || [];
     eventsThisDay.forEach((task, i) => {
       if (classFilter && task.class !== classFilter) return;
-      if (!classFilter && task.class) return; // exclude class-assigned tasks in "all tasks"
       if (doneList[i]) completed++;
       else left++;
     });
