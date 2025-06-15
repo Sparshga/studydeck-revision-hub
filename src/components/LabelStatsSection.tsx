@@ -59,9 +59,9 @@ const LABELS = [
 const PIE_COLORS = ["#2ecc40", "#ffd600"]; // Green for completed, yellow for left
 
 const LabelStatsSection: React.FC<LabelStatsSectionProps> = ({ classStats }) => {
-  const labels = Object.keys(classStats);
+  const labelNames = Object.keys(classStats);
 
-  if (labels.length === 0) {
+  if (labelNames.length === 0) {
     return null;
   }
 
@@ -74,12 +74,12 @@ const LabelStatsSection: React.FC<LabelStatsSectionProps> = ({ classStats }) => 
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-8">
-            {labels.map(label => (
-              <div key={label}>
-                <div className="font-semibold mb-2 text-md">{label}</div>
+            {labelNames.map(labelName => (
+              <div key={labelName}>
+                <div className="font-semibold mb-2 text-md">{labelName}</div>
                 <div className="flex flex-row gap-8 overflow-x-auto">
-                  {LABELS.map(({ key, label: timeLabel }, i) => {
-                    const stat = classStats[label][key as keyof typeof classStats[label]];
+                  {LABELS.map(({ key, label: timeLabel }) => {
+                    const stat = classStats[labelName][key as keyof typeof classStats[labelName]];
                     return (
                       <div key={key} className="flex flex-col items-center min-w-[160px]">
                         <span className="font-medium mb-2">{timeLabel}</span>
