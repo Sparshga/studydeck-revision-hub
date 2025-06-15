@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from "react";
 import {
   Popover,
@@ -7,6 +6,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import AddMultipleTasksModal from "./AddMultipleTasksModal";
 
 type DayType = "work" | "vacation" | "sickness";
 
@@ -49,6 +49,11 @@ export default function DayDetailPopover(props: DayDetailPopoverProps) {
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Add helper for adding many events at once
+  const handleAddTasks = (tasks: string[]) => {
+    tasks.forEach(props.onAddEvent);
+  };
+
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{anchor}</PopoverTrigger>
@@ -82,7 +87,10 @@ export default function DayDetailPopover(props: DayDetailPopoverProps) {
         </div>
         {/* Event add */}
         <div className="mb-3">
-          <div className="text-xs text-muted-foreground mb-1">Important Events</div>
+          <div className="flex items-center mb-1 justify-between">
+            <div className="text-xs text-muted-foreground">Important Events</div>
+            <AddMultipleTasksModal onAddTasks={handleAddTasks} />
+          </div>
           <div className="flex gap-2">
             <input
               ref={inputRef}
