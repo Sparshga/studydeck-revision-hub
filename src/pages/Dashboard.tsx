@@ -39,13 +39,16 @@ const Dashboard = () => {
     setDate(d);
     if (d) {
       const today = new Date();
-      today.setHours(0,0,0,0);
-      const clicked = new Date(d); clicked.setHours(0,0,0,0);
+      today.setHours(0, 0, 0, 0);
+      const clicked = new Date(d);
+      clicked.setHours(0, 0, 0, 0);
       if (clicked >= today) {
         setSelectedDay(d);
         setDetailOpen(true);
       } else {
+        // Don't show popover at all for past dates
         setDetailOpen(false);
+        setSelectedDay(null);
       }
     }
   };
@@ -130,13 +133,10 @@ const Dashboard = () => {
                     <Calendar
                       mode="single"
                       selected={date}
-                      // When a day is clicked: open details popover (now only for >= today)
                       onSelect={handleCalendarSelect}
                       className="pointer-events-auto"
                       classNames={{
-                        // Add horizontal spacing between calendar cells (days)
-                        row: "flex w-full mt-2 space-x-2",
-                        // ... keep existing classNames as is, for all other keys ...
+                        row: "flex w-full mt-2 space-x-1",
                         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                         month: "space-y-4",
                         caption: "flex justify-center pt-1 relative items-center",
@@ -148,8 +148,8 @@ const Dashboard = () => {
                         table: "w-full border-collapse space-y-1",
                         head_row: "flex",
                         head_cell:
-                          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-                        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                          "text-muted-foreground w-9 font-normal text-[0.8rem]",
+                        cell: "h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
                         day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
                         day_range_end: "day-range-end",
                         day_selected:
@@ -164,23 +164,20 @@ const Dashboard = () => {
                       }}
                       modifiers={modifiers}
                       modifiersClassNames={{
-                        work: "bg-yellow-400 text-white rounded-full",
-                        vacation: "bg-gray-300 text-gray-800 rounded-full",
-                        sickness: "bg-red-300 text-gray-900 rounded-full",
+                        work: "bg-yellow-400 text-white",
+                        vacation: "bg-gray-300 text-gray-800",
+                        sickness: "bg-red-300 text-gray-900",
                         today: "ring-2 ring-primary ring-offset-2 font-bold"
                       }}
                       fromDate={new Date(new Date().getFullYear(), new Date().getMonth(), 1)}
                       toDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)}
                       showOutsideDays={false}
-                      disabled={(date) => {
-                        // Visually mark as disabled BUT allow the user to click older days for navigation
-                        return false; // So all dates show as clickable
-                      }}
+                      disabled={() => false}
                     />
                     <div className="flex gap-4 mt-4 px-2 text-xs items-center">
-                      <span className="flex gap-1 items-center"><span className="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span>Work</span>
-                      <span className="flex gap-1 items-center"><span className="w-3 h-3 rounded-full bg-gray-300 inline-block"></span>Vacation</span>
-                      <span className="flex gap-1 items-center"><span className="w-3 h-3 rounded-full bg-red-300 inline-block"></span>Sickness</span>
+                      <span className="flex gap-1 items-center"><span className="w-3 h-3 bg-yellow-400 inline-block"></span>Work</span>
+                      <span className="flex gap-1 items-center"><span className="w-3 h-3 bg-gray-300 inline-block"></span>Vacation</span>
+                      <span className="flex gap-1 items-center"><span className="w-3 h-3 bg-red-300 inline-block"></span>Sickness</span>
                       <span className="ml-auto text-[0.9em] text-muted-foreground">Today</span>
                     </div>
                   </div>
