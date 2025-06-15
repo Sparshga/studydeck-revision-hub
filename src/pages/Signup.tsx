@@ -1,8 +1,40 @@
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+
 const Signup = () => (
-  <main className="flex min-h-[80vh] flex-col items-center justify-center p-8">
-    <h1 className="text-3xl font-bold mb-4">Sign Up</h1>
-    <p className="text-muted-foreground">[Signup form here]</p>
+  <main className="flex min-h-[80vh] items-center justify-center bg-background">
+    <Card className="max-w-sm w-full shadow-md animate-fade-in">
+      <CardHeader>
+        <CardTitle className="text-center text-2xl font-bold">Create your StudyDeck Account</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block mb-1 text-sm font-medium text-muted-foreground">
+              Email
+            </label>
+            <Input id="email" type="email" placeholder="you@example.com" required />
+          </div>
+          <div>
+            <label htmlFor="password" className="block mb-1 text-sm font-medium text-muted-foreground">
+              Password
+            </label>
+            <Input id="password" type="password" placeholder="••••••••" required />
+          </div>
+          <Button type="submit" className="w-full mt-4">Sign Up</Button>
+        </form>
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link className="text-primary underline hover:opacity-80" to="/login">
+            Sign In
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
   </main>
 );
+
 export default Signup;
