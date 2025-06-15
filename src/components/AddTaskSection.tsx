@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,11 +66,10 @@ const AddTaskSection: React.FC<AddTaskSectionProps> = ({
         ) : (
           <div className="text-xs text-muted-foreground px-2 py-1">No labels</div>
         )}
-        <Button size="sm" type="submit">Add To Do</Button>
+        <Button size="sm" type="submit">Add multiple To Dos</Button>
       </div>
     </form>
   );
 };
 
 export default AddTaskSection;
-
