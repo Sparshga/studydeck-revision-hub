@@ -8,7 +8,7 @@ const navItems = [
   { path: "/notes", label: "Notes" },
   { path: "/add-note", label: "Add Note" },
   { path: "/revision-queue", label: "Revision Queue" },
-  { path: "/settings", label: "Settings" },
+  
 ];
 
 const Navbar = () => {

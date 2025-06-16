@@ -14,19 +14,14 @@ import LabelStatsSection from "@/components/LabelStatsSection";
 import AddTaskSection from "@/components/AddTaskSection";
 import DashboardStatsCard from "@/components/DashboardStatsCard";
 
+// Modified day types (no truancy!)
 type DayType = "work" | "vacation" | "sickness";
 
-interface DayData {
-  dayType: DayType;
-  events: string[];
-  doneMap: boolean[];
-}
-
+// Add PieStat type directly in this file for type support
 type PieStat = { completed: number; left: number };
 
-type TaskItem = { text: string; class?: string };
-
 function getInitialDays() {
+  // Similar mockDays logic, simply use without truancy
   const result: { [key: string]: DayType } = {};
   const now = new Date();
   for (let i = 1; i <= 31; i++) {
@@ -37,7 +32,10 @@ function getInitialDays() {
   return result;
 }
 
+type TaskItem = { text: string; class?: string };
+
 function getInitialDoneMap(eventsObj: { [key: string]: TaskItem[] }) {
+  // Initialize each day to an empty array matching the number of events for that day
   const done: { [key: string]: boolean[] } = {};
   for (const key in eventsObj) {
     done[key] = eventsObj[key]?.map(() => false);
@@ -70,194 +68,205 @@ function getTodoCoverageStats(
 }
 
 const Dashboard = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [displayMonth, setDisplayMonth] = useState<Date>(new Date());
-  const [dayData, setDayData] = useState<Record<string, DayData>>({});
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  
-  // Add state for day types
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [displayMonth, setDisplayMonth] = useState<Date>(new Date()); // for calendar view
   const [days, setDays] = useState<{ [key: string]: DayType }>(getInitialDays);
   const [events, setEvents] = useState<{ [key: string]: TaskItem[] }>({});
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
+
+  // Add state for task done tracking
   const [doneMap, setDoneMap] = useState<{ [key: string]: boolean[] }>(() =>
     getInitialDoneMap({})
   );
 
-  // Class management
-  const [classes, setClasses] = useState<string[]>([]);
-  const [pendingClass, setPendingClass] = useState<string>("");
+  // The selected date string and info
+  const selectedString = selectedDay?.toDateString() ?? "";
+  const selectedType: DayType = days[selectedString] || "work";
+  const selectedEvents: string[] = (events[selectedString] || []).map(ev => ev.text);
 
-  // Sample data for tasks
-  const tasks = [
-    { text: "Review project proposal", class: "Business" },
-    { text: "Update website design", class: "Design" },
-    { text: "Call client meeting", class: "Meeting" }
-  ];
-
+  // Only today's string and data
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayString = today.toDateString();
 
-  const getDayKey = (date: Date) => date.toDateString();
-
-  const getCurrentDayData = (date: Date): DayData => {
-    const key = getDayKey(date);
-    return dayData[key] || { dayType: "work", events: [], doneMap: [] };
-  };
-
-  const updateDayData = (date: Date, updates: Partial<DayData>) => {
-    const key = getDayKey(date);
-    const current = getCurrentDayData(date);
-    setDayData(prev => ({
-      ...prev,
-      [key]: { ...current, ...updates }
-    }));
-  };
-
-  const handleDayTypeChange = (date: Date, dayType: DayType) => {
-    updateDayData(date, { dayType });
-    setDays((prev) => ({
-      ...prev,
-      [date.toDateString()]: dayType,
-    }));
-  };
-
-  const handleAddEvent = (date: Date, event: string) => {
-    const current = getCurrentDayData(date);
-    updateDayData(date, {
-      events: [...current.events, event],
-      doneMap: [...current.doneMap, false]
-    });
-    
-    const dayStr = date.toDateString();
-    setEvents((prev) => {
-      const newTask: TaskItem = { text: event };
-      if (pendingClass) newTask.class = pendingClass;
-      const newEvents = {
-        ...prev,
-        [dayStr]: [...(prev[dayStr] || []), newTask],
-      };
-      setDoneMap((dPrev) => ({
-        ...dPrev,
-        [dayStr]: [...(dPrev[dayStr] || []), false],
-      }));
-      return newEvents;
-    });
-    setPendingClass("");
-  };
-
-  const handleRemoveEvent = (date: Date, index: number) => {
-    const current = getCurrentDayData(date);
-    const newEvents = current.events.filter((_, i) => i !== index);
-    const newDoneMap = current.doneMap.filter((_, i) => i !== index);
-    updateDayData(date, { events: newEvents, doneMap: newDoneMap });
-    
-    const dayStr = date.toDateString();
-    setEvents((prev) => {
-      if (!prev[dayStr]) return prev;
-      const next = [...prev[dayStr]];
-      next.splice(index, 1);
-      setDoneMap((dPrev) => {
-        const doneList = Array.isArray(dPrev[dayStr]) ? [...dPrev[dayStr]] : [];
-        doneList.splice(index, 1);
-        return {
-          ...dPrev,
-          [dayStr]: doneList,
-        };
-      });
-      return {
-        ...prev,
-        [dayStr]: next,
-      };
-    });
-  };
-
-  const handleToggleDone = (date: Date, eventIndex: number) => {
-    const current = getCurrentDayData(date);
-    const newDoneMap = [...current.doneMap];
-    newDoneMap[eventIndex] = !newDoneMap[eventIndex];
-    updateDayData(date, { doneMap: newDoneMap });
-    
-    const dayStr = date.toDateString();
-    setDoneMap((prev) => {
-      const arr = Array.isArray(prev[dayStr]) ? [...prev[dayStr]] : [];
-      arr[eventIndex] = !arr[eventIndex];
-      return {
-        ...prev,
-        [dayStr]: arr,
-      };
-    });
-  };
-
-  const handleAddTasks = (date: Date, tasks: string[]) => {
-    tasks.forEach(task => handleAddEvent(date, task));
-  };
-
+  // Handler for calendar click - only allow dates of today or newer
   const handleCalendarSelect = (d?: Date) => {
     if (!d) return;
-    setSelectedDate(d);
+    setDate(d);
     setDisplayMonth(new Date(d.getFullYear(), d.getMonth()));
     const clicked = new Date(d);
     clicked.setHours(0, 0, 0, 0);
     if (clicked >= today) {
-      setPopoverOpen(true);
+      setSelectedDay(d);
+      setDetailOpen(true);
     } else {
-      setPopoverOpen(false);
+      // Don't show popover at all for past dates
+      setDetailOpen(false);
+      setSelectedDay(d); // still update selection
     }
   };
 
-  // Class management handlers
-  const handleAddClass = (c: string) =>
-    setClasses(prev => prev.includes(c) ? prev : [...prev, c]);
-  const handleDeleteClass = (c: string) => setClasses(prev => prev.filter(x => x !== c));
-
-  const handleAddTaskWithLabel = (taskText: string, label?: string) => {
-    handleAddEvent(selectedDate, taskText);
+  const handleDayTypeChange = (t: DayType) => {
+    if (selectedDay) {
+      setDays((prev) => ({
+        ...prev,
+        [selectedDay.toDateString()]: t,
+      }));
+    }
   };
 
-  // Calendar modifiers for color coding
-  const modifiers = {
-    work: Object.keys(days).filter((d) => days[d] === "work").map((d) => new Date(d)),
-    vacation: Object.keys(days).filter((d) => days[d] === "vacation").map((d) => new Date(d)),
-    sickness: Object.keys(days).filter((d) => days[d] === "sickness").map((d) => new Date(d)),
-    today: [today],
+  // Extend onAddEvent for doneMap, now supports class
+  const enhancedHandleAddEvent = (event: string, labelOverride?: string) => {
+    if (selectedDay) {
+      const dayStr = selectedDay.toDateString();
+      setEvents((prev) => {
+        const newTask: TaskItem = { text: event };
+        if (typeof labelOverride === "string") newTask.class = labelOverride;
+        else if (pendingClass) newTask.class = pendingClass;
+        const newEvents = {
+          ...prev,
+          [dayStr]: [...(prev[dayStr] || []), newTask],
+        };
+        // Add new doneMap entry for new event
+        setDoneMap((dPrev) => ({
+          ...dPrev,
+          [dayStr]: [...(dPrev[dayStr] || []), false],
+        }));
+        return newEvents;
+      });
+      setPendingClass(""); // reset after add
+    }
   };
 
-  const currentDayData = getCurrentDayData(selectedDate);
-  const todayData = getCurrentDayData(new Date());
-  const isToday = getDayKey(selectedDate) === getDayKey(new Date());
+  // Extend remove event for doneMap
+  const enhancedHandleRemoveEvent = (i: number) => {
+    if (selectedDay) {
+      const dayStr = selectedDay.toDateString();
+      setEvents((prev) => {
+        if (!prev[dayStr]) return prev;
+        const next = [...prev[dayStr]];
+        next.splice(i, 1);
+        setDoneMap((dPrev) => {
+          const doneList = Array.isArray(dPrev[dayStr]) ? [...dPrev[dayStr]] : [];
+          doneList.splice(i, 1);
+          return {
+            ...dPrev,
+            [dayStr]: doneList,
+          };
+        });
+        return {
+          ...prev,
+          [dayStr]: next,
+        };
+      });
+    }
+  };
 
-  // Statistics calculations
+  // Handler for toggling event done status
+  const handleToggleDone = (idx: number) => {
+    if (selectedDay) {
+      const dayStr = selectedDay.toDateString();
+      setDoneMap((prev) => {
+        const arr = Array.isArray(prev[dayStr]) ? [...prev[dayStr]] : [];
+        arr[idx] = !arr[idx];
+        return {
+          ...prev,
+          [dayStr]: arr,
+        };
+      });
+    }
+  };
+
+  // Calendar navigation handlers (month/year)
+  const handleMonthChange = (inc: number) => {
+    setDisplayMonth(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + inc);
+      return new Date(newDate.getFullYear(), newDate.getMonth());
+    });
+  };
+  const handleYearChange = (inc: number) => {
+    setDisplayMonth(prev => {
+      const newDate = new Date(prev);
+      newDate.setFullYear(prev.getFullYear() + inc);
+      return new Date(newDate.getFullYear(), newDate.getMonth());
+    });
+  };
+
+  // The info box will now show selected date info
+  const infoBoxDayType: DayType = selectedType;
+  const infoBoxEvents: string[] = selectedEvents;
+  const infoBoxDate: Date = selectedDay ?? today;
+  const infoBoxDoneMap: boolean[] = doneMap[selectedString] || [];
+  const isToday = selectedDay
+    ? selectedDay.toDateString() === todayString
+    : true;
+
+  // Current selected day stats
   const selectedStats = React.useMemo(() => {
-    const str = selectedDate.toDateString();
+    const str = selectedDay ? selectedDay.toDateString() : today.toDateString();
     const eventsList = events[str] || [];
     const doneList = doneMap[str] || [];
-    let completed = 0, left = 0;
+    let completed = 0,
+      left = 0;
     eventsList.forEach((task, i) => {
       if (doneList[i]) completed++;
       else left++;
     });
     return { completed, left };
-  }, [selectedDate, events, doneMap]);
+  }, [selectedDay, events, doneMap, today]);
 
+  // This month stats
   const thisMonthStats = React.useMemo(() => {
-    const start = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    const end = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+    const ref = selectedDay ?? today;
+    const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
     return getTodoCoverageStats(doneMap, events, { start, end });
-  }, [selectedDate, events, doneMap]);
+  }, [selectedDay, events, doneMap, today]);
 
+  // This year stats
   const thisYearStats = React.useMemo(() => {
-    const start = new Date(selectedDate.getFullYear(), 0, 1);
-    const end = new Date(selectedDate.getFullYear(), 11, 31);
+    const ref = selectedDay ?? today;
+    const start = new Date(ref.getFullYear(), 0, 1);
+    const end = new Date(ref.getFullYear(), 11, 31);
     return getTodoCoverageStats(doneMap, events, { start, end });
-  }, [selectedDate, events, doneMap]);
+  }, [selectedDay, events, doneMap, today]);
 
+  // Modifier arrays for the calendar
+  const mockDays = days;
+  const modifiers = {
+    work: Object.keys(mockDays).filter((d) => mockDays[d] === "work").map((d) => new Date(d)),
+    vacation: Object.keys(mockDays).filter((d) => mockDays[d] === "vacation").map((d) => new Date(d)),
+    sickness: Object.keys(mockDays).filter((d) => mockDays[d] === "sickness").map((d) => new Date(d)),
+    today: [today],
+  };
+
+  // Pass if currently selected (side panel correlates with selectedDay)
+  const isSelected = true;
+
+  // class add/remove
+  const [classes, setClasses] = useState<string[]>([]);
+  const handleAddClass = (c: string) =>
+    setClasses(prev => prev.includes(c) ? prev : [...prev, c]);
+  const handleDeleteClass = (c: string) => setClasses(prev => prev.filter(x => x !== c));
+
+  // Extract class list for dropdown
+  const classOptions = classes;
+
+  // --- When adding a task, select a class (optional) ---
+  const [pendingClass, setPendingClass] = useState<string>("");
+
+  // For per-class stats
   const classStats = React.useMemo(() => {
     const result: { [key: string]: { day: PieStat; month: PieStat; year: PieStat } } = {};
     for (const c of classes) {
-      const str = selectedDate.toDateString();
+      // 1. Selected date
+      const str = selectedDay ? selectedDay.toDateString() : today.toDateString();
       const eventsList = events[str] || [];
       const doneList = doneMap[str] || [];
-      let completed = 0, left = 0;
+      let completed = 0,
+        left = 0;
       eventsList.forEach((task, i) => {
         if (task.class !== c) return;
         if (doneList[i]) completed++;
@@ -265,70 +274,45 @@ const Dashboard = () => {
       });
       const dayStat = { completed, left };
 
-      const startM = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-      const endM = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+      // This month
+      const ref = selectedDay ?? today;
+      const startM = new Date(ref.getFullYear(), ref.getMonth(), 1);
+      const endM = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
       const monthStat = getTodoCoverageStats(doneMap, events, { start: startM, end: endM }, c);
 
-      const startY = new Date(selectedDate.getFullYear(), 0, 1);
-      const endY = new Date(selectedDate.getFullYear(), 11, 31);
+      // This year
+      const startY = new Date(ref.getFullYear(), 0, 1);
+      const endY = new Date(ref.getFullYear(), 11, 31);
       const yearStat = getTodoCoverageStats(doneMap, events, { start: startY, end: endY }, c);
       result[c] = { day: dayStat, month: monthStat, year: yearStat };
     }
     return result;
-  }, [classes, selectedDate, events, doneMap]);
+  }, [classes, selectedDay, events, doneMap, today]);
 
-  const stats = [
-    {
-      title: "Today's Tasks",
-      stat: selectedStats,
-      color: "#2ecc40"
-    },
-    {
-      title: "This Week",
-      stat: thisMonthStats,
-      color: "#4D96FF"
-    },
-    {
-      title: "This Month",
-      stat: thisYearStats,
-      color: "#FFD93D"
-    }
-  ];
+  // Handle AddTaskSection "add task" logic unified for both labeled and non-labeled tasks:
+  const handleAddTaskWithLabel = (taskText: string, label?: string) => {
+    enhancedHandleAddEvent(taskText, label);
+  };
 
   return (
     <main className="relative min-h-screen bg-background dark:bg-gray-900 overflow-hidden">
       <ReactiveBackground bubbleMode={true} />
-      
+
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
       </div>
-      
+
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left column - Profile Card */}
           <div className="space-y-6">
             <ProfileCard />
-            
+
             {/* Class Manager Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Task Categories</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ClassManager
-                  classes={classes}
-                  onAddClass={handleAddClass}
-                  onDeleteClass={handleDeleteClass}
-                />
-                <AddTaskSection
-                  availableLabels={classes}
-                  onAddTask={handleAddTaskWithLabel}
-                />
-              </CardContent>
-            </Card>
+           
           </div>
-          
+
           {/* Right column - Calendar and Stats */}
           <div className="lg:col-span-2 space-y-6">
             {/* Calendar Section */}
@@ -340,7 +324,7 @@ const Dashboard = () => {
                 <div className="flex-shrink-0">
                   <Calendar
                     mode="single"
-                    selected={selectedDate}
+                    selected={selectedDay || date}
                     onSelect={handleCalendarSelect}
                     month={displayMonth}
                     onMonthChange={setDisplayMonth}
@@ -366,32 +350,77 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                
-                {selectedDate && (
-                  <div className="flex-1">
-                    <TodayInfoBox
-                      dayType={currentDayData.dayType}
-                      events={currentDayData.events}
-                      date={selectedDate}
-                      doneMap={currentDayData.doneMap}
-                      onToggleDone={(eventIdx) => handleToggleDone(selectedDate, eventIdx)}
-                      isToday={isToday}
-                      isSelected={true}
-                      onDayTypeChange={(dayType) => handleDayTypeChange(selectedDate, dayType)}
-                      onAddEvent={(event) => handleAddEvent(selectedDate, event)}
-                      onRemoveEvent={(index) => handleRemoveEvent(selectedDate, index)}
-                      onAddTasks={(tasks) => handleAddTasks(selectedDate, tasks)}
-                    />
+
+                {(
+                  <div className="flex flex-col gap-4"> {/* vertical flex with spacing */}
+                   <TodayInfoBox
+                  dayType={infoBoxDayType}
+                  events={selectedEvents}
+                  date={infoBoxDate}
+                  doneMap={infoBoxDoneMap}
+                  onToggleDone={handleToggleDone}
+                  isToday={isToday}
+                  isSelected={true}
+                  onDayTypeChange={handleDayTypeChange}
+                  onAddEvent={(taskStr: string) => {
+                    handleAddTaskWithLabel(taskStr, pendingClass || undefined);
+                  }}
+                  onRemoveEvent={enhancedHandleRemoveEvent}
+                  onAddTasks={(tasks: string[]) => {
+                    tasks.forEach(task =>
+                      handleAddTaskWithLabel(task, pendingClass || undefined)
+                    );
+                  }}
+                />
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Task Categories</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ClassManager
+                          classes={classes}
+                          onAddClass={handleAddClass}
+                          onDeleteClass={handleDeleteClass}
+                        />
+                        <AddTaskSection
+                          availableLabels={classes}
+                          onAddTask={handleAddTaskWithLabel}
+                        />
+                      </CardContent>
+                    </Card>
                   </div>
+
                 )}
               </CardContent>
             </Card>
-            
+
             {/* Stats Dashboard */}
-            <StatsDashboard stats={stats} />
-            
-            {/* Label Stats Section */}
-            <LabelStatsSection classStats={classStats} />
+             <DashboardStatsCard
+          stats={[
+            {
+              title: selectedDay
+                ? `Selected (${selectedDay.toLocaleDateString()})`
+                : `Today (${today.toLocaleDateString()})`,
+              stat: selectedStats, // Now counts ALL tasks (with or without label)
+              color: "#2ecc40",
+            },
+            {
+              title: `Month (${(selectedDay ?? today).toLocaleString(undefined, {
+                month: "long",
+                year: "numeric",
+              })})`,
+              stat: thisMonthStats,
+              color: "#ffd600",
+            },
+            {
+              title: `Year (${(selectedDay ?? today).getFullYear()})`,
+              stat: thisYearStats,
+              color: "#ffd600",
+            },
+          ]}
+        />
+        <LabelStatsSection classStats={classStats} />
           </div>
         </div>
       </div>
