@@ -279,7 +279,7 @@ const Notes = () => {
                 >
                   <div className={`w-2 h-2 rounded-full ${folder.color}`} />
                   {folder.name}
-                </div>
+                </Button>
               ))}
             </div>
           </div>
