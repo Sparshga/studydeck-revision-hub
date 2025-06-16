@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +9,7 @@ import {
   Star, 
   StarOff, 
   Calendar,
-  FileText,
-  FilePdf
+  FileText
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -71,7 +69,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
             <div className="flex items-center gap-4 flex-1">
               <div className="flex-shrink-0">
                 {note.type === 'pdf' ? (
-                  <FilePdf className="w-8 h-8 text-red-500" />
+                  <FileText className="w-8 h-8 text-red-500" />
                 ) : (
                   <FileText className="w-8 h-8 text-blue-500" />
                 )}
@@ -154,7 +152,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             {note.type === 'pdf' ? (
-              <FilePdf className="w-5 h-5 text-red-500" />
+              <FileText className="w-5 h-5 text-red-500" />
             ) : (
               <FileText className="w-5 h-5 text-blue-500" />
             )}
