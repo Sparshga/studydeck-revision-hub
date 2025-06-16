@@ -110,7 +110,7 @@ const Dashboard = () => {
       
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left column - Profile and Today's Tasks */}
+          {/* Left column - Profile Card and Today's Tasks */}
           <div className="space-y-6">
             <ProfileCard />
             <TodaysTaskList tasks={tasks} />
