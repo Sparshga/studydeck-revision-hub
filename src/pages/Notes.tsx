@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
+import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
 import NoteCard from "@/components/NoteCard";
 import AddNoteModal from "@/components/AddNoteModal";
@@ -34,6 +35,7 @@ interface Folder {
 }
 
 const Notes = () => {
+  const { toast } = useToast();
   const [notes, setNotes] = useState<Note[]>([
     {
       id: "1",
@@ -92,6 +94,10 @@ const Notes = () => {
       updatedAt: new Date().toLocaleDateString(),
     };
     setNotes([...notes, newNote]);
+    toast({
+      title: "Note added successfully",
+      description: "Your new note has been created.",
+    });
   };
 
   const handleEditNote = (id: string, noteData: Partial<Note>) => {
@@ -100,10 +106,18 @@ const Notes = () => {
         ? { ...note, ...noteData, updatedAt: new Date().toLocaleDateString() }
         : note
     ));
+    toast({
+      title: "Note updated",
+      description: "Your note has been updated successfully.",
+    });
   };
 
   const handleDeleteNote = (id: string) => {
     setNotes(notes.filter(note => note.id !== id));
+    toast({
+      title: "Note deleted",
+      description: "Your note has been deleted successfully.",
+    });
   };
 
   const handleToggleRevision = (id: string) => {
@@ -112,6 +126,11 @@ const Notes = () => {
         ? { ...note, isMarkedForRevision: !note.isMarkedForRevision }
         : note
     ));
+    const note = notes.find(n => n.id === id);
+    toast({
+      title: note?.isMarkedForRevision ? "Removed from revision queue" : "Added to revision queue",
+      description: note?.isMarkedForRevision ? "Note removed from revision queue." : "Note marked for revision.",
+    });
   };
 
   const handleCreateFolder = (folderData: Omit<Folder, 'id'>) => {
@@ -120,25 +139,33 @@ const Notes = () => {
       id: Date.now().toString(),
     };
     setFolders([...folders, newFolder]);
+    toast({
+      title: "Folder created",
+      description: "New folder has been created successfully.",
+    });
   };
 
   const handleImportPDF = (pdfData: { title: string; subject: string; tags: string[]; folderId?: string }) => {
     const newNote: Note = {
       ...pdfData,
       id: Date.now().toString(),
-      content: "PDF content imported",
+      content: "PDF content imported - ready for review and annotation",
       createdAt: new Date().toLocaleDateString(),
       updatedAt: new Date().toLocaleDateString(),
       isMarkedForRevision: false,
       type: 'pdf'
     };
     setNotes([...notes, newNote]);
+    toast({
+      title: "PDF imported successfully",
+      description: "Your PDF has been imported as a note.",
+    });
   };
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background dark:bg-gray-900">
       {/* Header */}
-      <div className="border-b bg-card">
+      <div className="border-b bg-card dark:bg-gray-800">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -252,7 +279,7 @@ const Notes = () => {
                 >
                   <div className={`w-2 h-2 rounded-full ${folder.color}`} />
                   {folder.name}
-                </Button>
+                </div>
               ))}
             </div>
           </div>
