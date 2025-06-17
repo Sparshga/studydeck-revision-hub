@@ -1,11 +1,13 @@
-
 import React, { useState } from "react";
 import { Grid, List, Calendar, BookOpen } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Toggle } from "@/components/ui/toggle";
+import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
 import NoteCard from "@/components/NoteCard";
+import ViewFullModal from "@/components/ui/ViewFullModal";
+import EditNoteModal from "@/components/ui/EditNoteModal";
 
 interface Note {
   id: string;
@@ -28,10 +30,11 @@ interface Folder {
 }
 
 const RevisionQueue = () => {
+  const { toast } = useToast();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Mock data for revision notes
-  const [revisionNotes] = useState<Note[]>([
+  const [revisionNotes, setRevisionNotes] = useState<Note[]>([
     {
       id: "1",
       title: "Review UX Feedback",
@@ -73,16 +76,66 @@ const RevisionQueue = () => {
     { id: "3", name: "Website Design", color: "bg-purple-500" }
   ]);
 
-  const handleEditNote = (id: string, noteData: Partial<Note>) => {
-    console.log("Edit note:", id, noteData);
+  // Modal states
+  const [isViewFullModalOpen, setIsViewFullModalOpen] = useState(false);
+  const [selectedNoteForView, setSelectedNoteForView] = useState<Note | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedNoteForEdit, setSelectedNoteForEdit] = useState<Note | null>(null);
+
+  // Get unique subjects for the edit modal
+  const subjects = [...new Set(revisionNotes.map(note => note.subject))];
+
+  const handleEditNote = (noteId: string) => {
+    const noteToEdit = revisionNotes.find(note => note.id === noteId);
+    if (noteToEdit) {
+      setSelectedNoteForEdit(noteToEdit);
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleViewFull = (noteId: string) => {
+    const noteToView = revisionNotes.find(note => note.id === noteId);
+    if (noteToView) {
+      setSelectedNoteForView(noteToView);
+      setIsViewFullModalOpen(true);
+    }
   };
 
   const handleDeleteNote = (id: string) => {
-    console.log("Delete note:", id);
+    setRevisionNotes(revisionNotes.filter(note => note.id !== id));
+    toast({
+      title: "Note deleted",
+      description: "Your note has been deleted successfully.",
+    });
   };
 
   const handleToggleRevision = (id: string) => {
-    console.log("Toggle revision:", id);
+    setRevisionNotes(revisionNotes.map(note =>
+      note.id === id
+        ? { ...note, isMarkedForRevision: !note.isMarkedForRevision }
+        : note
+    ));
+    const note = revisionNotes.find(n => n.id === id);
+    toast({
+      title: note?.isMarkedForRevision ? "Removed from revision queue" : "Added to revision queue",
+      description: note?.isMarkedForRevision ? "Note removed from revision queue." : "Note marked for revision.",
+    });
+  };
+
+  const handleSaveEditedNote = (noteData: Partial<Note>) => {
+    if (selectedNoteForEdit) {
+      setRevisionNotes(revisionNotes.map(note =>
+        note.id === selectedNoteForEdit.id
+          ? { ...note, ...noteData, updatedAt: new Date().toLocaleDateString() }
+          : note
+      ));
+      toast({
+        title: "Note updated",
+        description: "Your note has been updated successfully.",
+      });
+      setIsEditModalOpen(false);
+      setSelectedNoteForEdit(null);
+    }
   };
 
   return (
@@ -195,6 +248,7 @@ const RevisionQueue = () => {
                   folders={folders}
                   viewMode={viewMode}
                   onEdit={handleEditNote}
+                  onViewFull={handleViewFull}
                   onDelete={handleDeleteNote}
                   onToggleRevision={handleToggleRevision}
                 />
@@ -203,6 +257,29 @@ const RevisionQueue = () => {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <ViewFullModal
+        isOpen={isViewFullModalOpen}
+        onClose={() => {
+          setIsViewFullModalOpen(false);
+          setSelectedNoteForView(null);
+        }}
+        note={selectedNoteForView}
+        folders={folders}
+      />
+
+      <EditNoteModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedNoteForEdit(null);
+        }}
+        note={selectedNoteForEdit}
+        folders={folders}
+        subjects={subjects}
+        onSave={handleSaveEditedNote}
+      />
     </main>
   );
 };

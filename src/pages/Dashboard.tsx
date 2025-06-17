@@ -296,7 +296,7 @@ const Dashboard = () => {
 
   return (
     <main className="relative min-h-screen bg-background dark:bg-gray-900 overflow-hidden">
-      <ReactiveBackground bubbleMode={true} />
+      <ReactiveBackground bubbleMode={false} />
 
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-20">

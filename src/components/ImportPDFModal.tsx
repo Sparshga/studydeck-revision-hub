@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import {
   Dialog,
@@ -39,8 +38,8 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
   isOpen,
   onClose,
   onImport,
-  folders,
-  subjects,
+  folders = [],
+  subjects = [],
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -81,18 +80,29 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = () => {
+    // Validation: Check if required fields are filled
     if (!selectedFile || !title.trim()) return;
+    
+    // Check if subject is selected
+    if (!subject) {
+      alert("Please select a subject");
+      return;
+    }
+    
+    // If "new" subject is selected, check if new subject name is provided
+    if (subject === "new" && !newSubject.trim()) {
+      alert("Please enter a new subject name");
+      return;
+    }
 
-    const finalSubject = subject === "new" ? newSubject : subject;
+    const finalSubject = subject === "new" ? newSubject.trim() : subject;
     
     onImport({
       title: title.trim(),
       subject: finalSubject,
       tags,
-      folderId: folderId || undefined,
+      folderId: folderId === "none" ? undefined : folderId || undefined,
     });
 
     // Reset form
@@ -109,6 +119,12 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
     onClose();
   };
 
+  // Check if form is valid for submit button state
+  const isFormValid = selectedFile && 
+                     title.trim() && 
+                     subject && 
+                     (subject !== "new" || newSubject.trim());
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
@@ -116,7 +132,7 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
           <DialogTitle>Import PDF</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div>
             <Label>Select PDF File *</Label>
             <div className="mt-2">
@@ -164,21 +180,24 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter PDF title..."
-              required
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="subject">Subject *</Label>
-              <Select value={subject} onValueChange={setSubject} required>
+              <Select value={subject} onValueChange={setSubject}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
                 <SelectContent>
-                  {subjects.map(subj => (
-                    <SelectItem key={subj} value={subj}>{subj}</SelectItem>
-                  ))}
+                  {subjects && subjects.length > 0 ? (
+                    subjects.map(subj => (
+                      <SelectItem key={subj} value={subj}>{subj}</SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>No subjects available</SelectItem>
+                  )}
                   <SelectItem value="new">+ Create New Subject</SelectItem>
                 </SelectContent>
               </Select>
@@ -189,7 +208,6 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
                   onChange={(e) => setNewSubject(e.target.value)}
                   placeholder="Enter new subject..."
                   className="mt-2"
-                  required
                 />
               )}
             </div>
@@ -201,15 +219,19 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
                   <SelectValue placeholder="Select folder" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No folder</SelectItem>
-                  {folders.map(folder => (
-                    <SelectItem key={folder.id} value={folder.id}>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${folder.color}`} />
-                        {folder.name}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="none">No folder</SelectItem>
+                  {folders && folders.length > 0 ? (
+                    folders.map(folder => (
+                      <SelectItem key={folder.id} value={folder.id}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${folder.color}`} />
+                          {folder.name}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>No folders available</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -254,11 +276,11 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!selectedFile || !title.trim()}>
+            <Button onClick={handleSubmit} disabled={!isFormValid}>
               Import PDF
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

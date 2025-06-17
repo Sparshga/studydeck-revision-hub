@@ -9,7 +9,8 @@ import {
   Star, 
   StarOff, 
   Calendar,
-  FileText
+  FileText,
+  Eye
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ interface NoteCardProps {
   onEdit: (id: string, noteData: Partial<Note>) => void;
   onDelete: (id: string) => void;
   onToggleRevision: (id: string) => void;
+  onViewFull: (id: string) => void;
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({
@@ -54,6 +56,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
   onEdit,
   onDelete,
   onToggleRevision,
+  onViewFull,
 }) => {
   const folder = folders.find(f => f.id === note.folderId);
   
@@ -113,6 +116,10 @@ const NoteCard: React.FC<NoteCardProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onViewFull(note.id)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    {note.type === 'pdf' ? 'View Full PDF' : 'View Full Note'}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onEdit(note.id, {})}>
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
@@ -169,6 +176,10 @@ const NoteCard: React.FC<NoteCardProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onViewFull(note.id)}>
+                <Eye className="w-4 h-4 mr-2" />
+                {note.type === 'pdf' ? 'View Full PDF' : 'View Full Note'}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEdit(note.id, {})}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit

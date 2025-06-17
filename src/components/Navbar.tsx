@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import FancyLogoutButton from "@/components/FancyLogoutButton";
@@ -6,7 +5,6 @@ import FancyLogoutButton from "@/components/FancyLogoutButton";
 const navItems = [
   { path: "/dashboard", label: "Dashboard" },
   { path: "/notes", label: "Notes" },
-  { path: "/add-note", label: "Add Note" },
   { path: "/revision-queue", label: "Revision Queue" },
   
 ];
@@ -17,7 +15,10 @@ const Navbar = () => {
   const isAuth = !(location.pathname === "/login" || location.pathname === "/signup");
   return (
     <nav className="w-full border-b p-4 bg-background flex items-center justify-between">
-      <Link to="/" className="text-2xl font-bold text-primary">🧠 StudyDeck</Link>
+      <div className="flex flex-col">
+        <Link to="/" className="text-2xl font-bold text-primary">🧠 StudyDeck</Link>
+        <span className="text-xs text-muted-foreground">created by Sparsh.io</span>
+      </div>
       <div className="flex gap-2">
         {isAuth ? (
           <>

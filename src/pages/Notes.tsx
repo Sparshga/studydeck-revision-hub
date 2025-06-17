@@ -13,7 +13,8 @@ import NoteCard from "@/components/NoteCard";
 import AddNoteModal from "@/components/AddNoteModal";
 import ImportPDFModal from "@/components/ImportPDFModal";
 import CreateFolderModal from "@/components/CreateFolderModal";
-
+import ViewFullModal from "@/components/ui/ViewFullModal";
+import EditNoteModal from "@/components/ui/EditNoteModal";
 interface Note {
   id: string;
   title: string;
@@ -74,42 +75,36 @@ const Notes = () => {
   const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
   const [isImportPDFModalOpen, setIsImportPDFModalOpen] = useState(false);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
-
+  const [isViewFullModalOpen, setIsViewFullModalOpen] = useState(false);
+  const [selectedNoteForView, setSelectedNoteForView] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedNoteForEdit, setSelectedNoteForEdit] = useState(null);
   const subjects = [...new Set(notes.map(note => note.subject))];
 
   const filteredNotes = notes.filter(note => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         note.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesSubject = selectedSubject === "all" || note.subject === selectedSubject;
     const matchesFolder = selectedFolder === "all" || note.folderId === selectedFolder;
     return matchesSearch && matchesSubject && matchesFolder;
   });
 
-  const handleAddNote = (noteData: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newNote: Note = {
+  const handleAddNote = (noteData) => {
+    const newNote = {
       ...noteData,
       id: Date.now().toString(),
       createdAt: new Date().toLocaleDateString(),
       updatedAt: new Date().toLocaleDateString(),
     };
     setNotes([...notes, newNote]);
-    toast({
-      title: "Note added successfully",
-      description: "Your new note has been created.",
-    });
+    toast({ title: "Note added", description: "Note was successfully created." });
   };
 
-  const handleEditNote = (id: string, noteData: Partial<Note>) => {
-    setNotes(notes.map(note => 
-      note.id === id 
-        ? { ...note, ...noteData, updatedAt: new Date().toLocaleDateString() }
-        : note
-    ));
-    toast({
-      title: "Note updated",
-      description: "Your note has been updated successfully.",
-    });
+  const handleEditNote = (noteId) => {
+    const noteToEdit = notes.find(note => note.id === noteId);
+    setSelectedNoteForEdit(noteToEdit);
+    setIsEditModalOpen(true);
   };
 
   const handleDeleteNote = (id: string) => {
@@ -121,8 +116,8 @@ const Notes = () => {
   };
 
   const handleToggleRevision = (id: string) => {
-    setNotes(notes.map(note => 
-      note.id === id 
+    setNotes(notes.map(note =>
+      note.id === id
         ? { ...note, isMarkedForRevision: !note.isMarkedForRevision }
         : note
     ));
@@ -144,7 +139,11 @@ const Notes = () => {
       description: "New folder has been created successfully.",
     });
   };
-
+  const handleViewFull = (noteId) => {
+    const noteToView = notes.find(note => note.id === noteId);
+    setSelectedNoteForView(noteToView);
+    setIsViewFullModalOpen(true);
+  };
   const handleImportPDF = (pdfData: { title: string; subject: string; tags: string[]; folderId?: string }) => {
     const newNote: Note = {
       ...pdfData,
@@ -174,7 +173,7 @@ const Notes = () => {
                 {filteredNotes.length} notes
               </Badge>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <Button
@@ -219,7 +218,7 @@ const Notes = () => {
               className="pl-10"
             />
           </div>
-          
+
           <div className="flex gap-2">
             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
               <SelectTrigger className="w-32">
@@ -299,7 +298,7 @@ const Notes = () => {
           </div>
         ) : (
           <div className={
-            viewMode === "grid" 
+            viewMode === "grid"
               ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
               : "space-y-4"
           }>
@@ -312,6 +311,7 @@ const Notes = () => {
                 onEdit={handleEditNote}
                 onDelete={handleDeleteNote}
                 onToggleRevision={handleToggleRevision}
+                onViewFull={handleViewFull}
               />
             ))}
           </div>
@@ -326,7 +326,15 @@ const Notes = () => {
         folders={folders}
         subjects={subjects}
       />
-
+      <ViewFullModal
+        isOpen={isViewFullModalOpen}
+        onClose={() => {
+          setIsViewFullModalOpen(false);
+          setSelectedNoteForView(null);
+        }}
+        note={selectedNoteForView}
+        folders={folders}
+      />
       <ImportPDFModal
         isOpen={isImportPDFModalOpen}
         onClose={() => setIsImportPDFModalOpen(false)}
@@ -334,7 +342,29 @@ const Notes = () => {
         folders={folders}
         subjects={subjects}
       />
-
+      <EditNoteModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedNoteForEdit(null);
+        }}
+        note={selectedNoteForEdit}
+        folders={folders}
+        subjects={subjects}
+        onSave={(noteData) => {
+          setNotes(notes.map(note =>
+            note.id === selectedNoteForEdit.id
+              ? { ...note, ...noteData, updatedAt: new Date().toLocaleDateString() }
+              : note
+          ));
+          toast({
+            title: "Note updated",
+            description: "Your note has been updated successfully.",
+          });
+          setIsEditModalOpen(false);
+          setSelectedNoteForEdit(null);
+        }}
+      />
       <CreateFolderModal
         isOpen={isCreateFolderModalOpen}
         onClose={() => setIsCreateFolderModalOpen(false)}

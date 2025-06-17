@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,18 +30,20 @@ interface Folder {
   color: string;
 }
 
-interface AddNoteModalProps {
+interface EditNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (note: Note) => void;
+  onSave: (note: Note) => void;
+  note: Note | null;
   folders: Folder[];
   subjects: string[];
 }
 
-const AddNoteModal: React.FC<AddNoteModalProps> = ({
+const EditNoteModal: React.FC<EditNoteModalProps> = ({
   isOpen,
   onClose,
-  onAdd,
+  onSave,
+  note,
   folders,
   subjects,
 }) => {
@@ -54,6 +56,20 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({
   const [isMarkedForRevision, setIsMarkedForRevision] = useState(false);
   const [folderId, setFolderId] = useState<string>("");
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  // Populate form with existing note data when modal opens
+  useEffect(() => {
+    if (note && isOpen) {
+      setTitle(note.title || "");
+      setContent(note.content || "");
+      setTags(note.tags || []);
+      setSubject(note.subject || "");
+      setIsMarkedForRevision(note.isMarkedForRevision || false);
+      setFolderId(note.folderId || "none");
+      setNewSubject("");
+      setErrors({});
+    }
+  }, [note, isOpen]);
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -105,48 +121,41 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({
 
     const finalSubject = subject === "new" ? newSubject.trim() : subject;
     
-    onAdd({
+    onSave({
       title: title.trim(),
       content: content.trim(),
       tags,
       subject: finalSubject,
       isMarkedForRevision,
       folderId: folderId === "none" ? undefined : folderId || undefined,
-      type: 'note'
+      type: note?.type || 'note'
     });
 
-    // Reset form
-    setTitle("");
-    setContent("");
-    setTags([]);
-    setTagInput("");
-    setSubject("");
-    setNewSubject("");
-    setIsMarkedForRevision(false);
-    setFolderId("");
-    setErrors({});
     onClose();
   };
 
   const handleClose = () => {
-    // Reset form when closing
-    setTitle("");
-    setContent("");
-    setTags([]);
-    setTagInput("");
-    setSubject("");
-    setNewSubject("");
-    setIsMarkedForRevision(false);
-    setFolderId("");
-    setErrors({});
+    // Reset form to original values when canceling
+    if (note) {
+      setTitle(note.title || "");
+      setContent(note.content || "");
+      setTags(note.tags || []);
+      setSubject(note.subject || "");
+      setIsMarkedForRevision(note.isMarkedForRevision || false);
+      setFolderId(note.folderId || "none");
+      setNewSubject("");
+      setErrors({});
+    }
     onClose();
   };
+
+  if (!note) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Note</DialogTitle>
+          <DialogTitle>Edit Note</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -166,25 +175,6 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({
             />
             {errors.title && (
               <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="content">Content *</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => {
-                setContent(e.target.value);
-                if (errors.content) {
-                  setErrors({...errors, content: ""});
-                }
-              }}
-              placeholder="Write your note content..."
-              className={`min-h-[200px] ${errors.content ? "border-red-500" : ""}`}
-            />
-            {errors.content && (
-              <p className="text-red-500 text-sm mt-1">{errors.content}</p>
             )}
           </div>
 
@@ -290,6 +280,25 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({
             )}
           </div>
 
+          <div>
+            <Label htmlFor="content">Content *</Label>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+                if (errors.content) {
+                  setErrors({...errors, content: ""});
+                }
+              }}
+              placeholder="Write your note content..."
+              className={`min-h-[200px] ${errors.content ? "border-red-500" : ""}`}
+            />
+            {errors.content && (
+              <p className="text-red-500 text-sm mt-1">{errors.content}</p>
+            )}
+          </div>
+
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -309,7 +318,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({
               type="submit" 
               disabled={!title.trim() || !content.trim() || !subject || (subject === "new" && !newSubject.trim())}
             >
-              Add Note
+              Save Changes
             </Button>
           </div>
         </form>
@@ -318,4 +327,4 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({
   );
 };
 
-export default AddNoteModal;
+export default EditNoteModal;

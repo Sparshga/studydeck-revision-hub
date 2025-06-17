@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -53,7 +52,7 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
 
     onCreate({
       name: name.trim(),
-      parentId: parentId || undefined,
+      parentId: parentId === "none" ? undefined : parentId || undefined,
       color,
     });
 
@@ -83,14 +82,14 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
             />
           </div>
 
-          <div>
+          {/* <div>
             <Label htmlFor="parent">Parent Folder (Optional)</Label>
             <Select value={parentId} onValueChange={setParentId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select parent folder" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No parent (root level)</SelectItem>
+                <SelectItem value="none">No parent (root level)</SelectItem>
                 {folders.map(folder => (
                   <SelectItem key={folder.id} value={folder.id}>
                     <div className="flex items-center gap-2">
@@ -101,7 +100,7 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
 
           <div>
             <Label htmlFor="color">Color</Label>
