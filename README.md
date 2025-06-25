@@ -15,7 +15,10 @@
 ---
 
 ![StudyDeck dashboard](docs/screenshot-dashboard.png)
-
+<p align="center">
+  <img src="docs/screenshot-analytics.png" alt="Analytics – Pie Charts" width="45%"/>
+  <img src="docs/screenshot-notes-page.png" alt="Notes Page" width="45%"/>
+</p>
 <p align="center">
   <em>Zero‑clutter interface · Full‑stack TypeScript · Mobile‑first design</em>
 </p>
