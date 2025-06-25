@@ -24,7 +24,7 @@ interface Note {
 }
 
 interface Folder {
-  id: string;
+  _id: string;
   name: string;
   parentId?: string;
   color: string;
@@ -243,7 +243,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({
                 <SelectContent>
                   <SelectItem value="none">No folder</SelectItem>
                   {folders.map(folder => (
-                    <SelectItem key={folder.id} value={folder.id}>
+                    <SelectItem key={folder._id} value={folder._id}>
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${folder.color}`} />
                         {folder.name}

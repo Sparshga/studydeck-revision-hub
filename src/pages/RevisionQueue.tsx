@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Grid, List, Calendar, BookOpen } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import ViewFullModal from "@/components/ui/ViewFullModal";
 import EditNoteModal from "@/components/ui/EditNoteModal";
 
 interface Note {
-  id: string;
+  _id: string;
   title: string;
   content: string;
   tags: string[];
@@ -23,59 +23,94 @@ interface Note {
 }
 
 interface Folder {
-  id: string;
+  _id: string;
   name: string;
   parentId?: string;
   color: string;
 }
 
+
 const RevisionQueue = () => {
+  const [notes, setNotes] = useState<Note[]>([]);
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
+  const debounceTimeout = 1000;
+  
   // Mock data for revision notes
-  const [revisionNotes, setRevisionNotes] = useState<Note[]>([
-    {
-      id: "1",
-      title: "Review UX Feedback",
-      content: "In the Review UX Feedback session, will evaluate the feedback received regarding the user experience (UX). Key points to review include user navigation patterns, interface clarity, and accessibility improvements.",
-      tags: ["UX", "Design", "Feedback"],
-      subject: "Design",
-      createdAt: "Mar 13, 2024",
-      updatedAt: "Mar 13, 2024",
-      isMarkedForRevision: true,
-      type: 'note'
-    },
-    {
-      id: "3",
-      title: "React Hooks Concepts",
-      content: "Understanding React Hooks - useState, useEffect, useContext, and custom hooks. Important concepts for modern React development.",
-      tags: ["React", "Hooks", "Frontend"],
-      subject: "Development",
-      createdAt: "Mar 12, 2024",
-      updatedAt: "Mar 12, 2024",
-      isMarkedForRevision: true,
-      type: 'note'
-    },
-    {
-      id: "4",
-      title: "Database Design Principles",
-      content: "Key principles of database design including normalization, indexing, and relationship management. Essential for backend development.",
-      tags: ["Database", "SQL", "Backend"],
-      subject: "Backend",
-      createdAt: "Mar 11, 2024",
-      updatedAt: "Mar 11, 2024",
-      isMarkedForRevision: true,
-      type: 'pdf'
-    }
-  ]);
 
-  const [folders] = useState<Folder[]>([
-    { id: "1", name: "Design System", color: "bg-blue-500" },
-    { id: "2", name: "Mobile App", color: "bg-green-500" },
-    { id: "3", name: "Website Design", color: "bg-purple-500" }
-  ]);
 
+  const [folders, setFolders] = useState<Folder[]>([
+    { _id: "1", name: "Design System", color: "bg-blue-500" },
+    { _id: "2", name: "Mobile App", color: "bg-green-500" },
+    { _id: "3", name: "Website Design", color: "bg-purple-500" }
+  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const response = await fetch("http://localhost:5000/api/data/data", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch notes and folders");
+
+        const data = await response.json();
+        setNotes(data.notes);
+        setFolders(data.folders);
+        const temp = notes.filter((note: Note) => note.isMarkedForRevision);
+
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+  
+  useEffect(() => {
+     
+  
+      const token = localStorage.getItem("token");
+      if (!token) return;
+  
+      const syncData = async () => {
+        try {
+          // Sync notes
+          await Promise.all(notes.map(async (note) => {
+            const response = await fetch("http://localhost:5000/api/data/note", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(note),
+            });
+  
+            if (!response.ok) {
+              const errRes = await response.json();
+              console.error("Note sync failed:", errRes);
+            }
+          }));
+  
+         
+         
+  
+        } catch (err) {
+          console.error("Error during syncing notes or folders:", err);
+        }
+      };
+  
+      const timer = setTimeout(syncData, debounceTimeout);
+      return () => clearTimeout(timer);
+    }, [notes]);
+  
+  
+  
+  console.log(notes);
+  const revisionNotes = notes.filter((note: Note) => note.isMarkedForRevision);
+  console.log(revisionNotes);
   // Modal states
   const [isViewFullModalOpen, setIsViewFullModalOpen] = useState(false);
   const [selectedNoteForView, setSelectedNoteForView] = useState<Note | null>(null);
@@ -83,60 +118,73 @@ const RevisionQueue = () => {
   const [selectedNoteForEdit, setSelectedNoteForEdit] = useState<Note | null>(null);
 
   // Get unique subjects for the edit modal
-  const subjects = [...new Set(revisionNotes.map(note => note.subject))];
+  const subjects = [...new Set(notes.map(note => note.subject))];
 
   const handleEditNote = (noteId: string) => {
-    const noteToEdit = revisionNotes.find(note => note.id === noteId);
+    const noteToEdit = notes.find(note => note._id === noteId);
     if (noteToEdit) {
       setSelectedNoteForEdit(noteToEdit);
       setIsEditModalOpen(true);
     }
   };
 
-  const handleViewFull = (noteId: string) => {
-    const noteToView = revisionNotes.find(note => note.id === noteId);
-    if (noteToView) {
-      setSelectedNoteForView(noteToView);
-      setIsViewFullModalOpen(true);
+  const handleViewFull = (noteId) => {
+    const noteToView = notes.find(note => note._id === noteId);
+    setSelectedNoteForView(noteToView);
+    setIsViewFullModalOpen(true);
+  };
+
+  const handleDeleteNote = async (_id: string) => {
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/data/note/${_id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errRes = await response.json();
+        console.error("Note deletion failed:", errRes);
+        throw new Error(errRes.msg || "Failed to delete note");
+      }
+
+      // Update local state after successful deletion
+      setNotes(notes.filter(note => note._id !== _id));
+      toast({
+        title: "Note deleted",
+        description: "Your note has been deleted successfully.",
+      });
+    } catch (err) {
+      console.error("Error deleting note:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete note. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleDeleteNote = (id: string) => {
-    setRevisionNotes(revisionNotes.filter(note => note.id !== id));
-    toast({
-      title: "Note deleted",
-      description: "Your note has been deleted successfully.",
-    });
-  };
 
-  const handleToggleRevision = (id: string) => {
-    setRevisionNotes(revisionNotes.map(note =>
-      note.id === id
+  const handleToggleRevision = (_id: string) => {
+    setNotes(notes.map(note =>
+      note._id === _id
         ? { ...note, isMarkedForRevision: !note.isMarkedForRevision }
         : note
     ));
-    const note = revisionNotes.find(n => n.id === id);
+    const note = notes.find(n => n._id === _id);
     toast({
       title: note?.isMarkedForRevision ? "Removed from revision queue" : "Added to revision queue",
       description: note?.isMarkedForRevision ? "Note removed from revision queue." : "Note marked for revision.",
     });
   };
 
-  const handleSaveEditedNote = (noteData: Partial<Note>) => {
-    if (selectedNoteForEdit) {
-      setRevisionNotes(revisionNotes.map(note =>
-        note.id === selectedNoteForEdit.id
-          ? { ...note, ...noteData, updatedAt: new Date().toLocaleDateString() }
-          : note
-      ));
-      toast({
-        title: "Note updated",
-        description: "Your note has been updated successfully.",
-      });
-      setIsEditModalOpen(false);
-      setSelectedNoteForEdit(null);
-    }
-  };
+
+
 
   return (
     <main className="min-h-screen bg-background dark:bg-gray-900">
@@ -150,7 +198,7 @@ const RevisionQueue = () => {
                 {revisionNotes.length} notes for revision
               </Badge>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <div className="flex border rounded-md">
@@ -199,7 +247,7 @@ const RevisionQueue = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">This Week</p>
-                  <p className="text-2xl font-semibold">{revisionNotes.filter(note => 
+                  <p className="text-2xl font-semibold">{revisionNotes.filter(note =>
                     new Date(note.updatedAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
                   ).length}</p>
                 </div>
@@ -237,13 +285,13 @@ const RevisionQueue = () => {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Notes for Revision</h2>
             <div className={
-              viewMode === "grid" 
+              viewMode === "grid"
                 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
                 : "space-y-4"
             }>
               {revisionNotes.map(note => (
                 <NoteCard
-                  key={note.id}
+                  key={note._id}
                   note={note}
                   folders={folders}
                   viewMode={viewMode}
@@ -278,7 +326,19 @@ const RevisionQueue = () => {
         note={selectedNoteForEdit}
         folders={folders}
         subjects={subjects}
-        onSave={handleSaveEditedNote}
+        onSave={(noteData) => {
+          setNotes(notes.map(note =>
+            note._id === selectedNoteForEdit._id
+              ? { ...note, ...noteData, updatedAt: new Date().toLocaleDateString() }
+              : note
+          ));
+          toast({
+            title: "Note updated",
+            description: "Your note has been updated successfully.",
+          });
+          setIsEditModalOpen(false);
+          setSelectedNoteForEdit(null);
+        }}
       />
     </main>
   );

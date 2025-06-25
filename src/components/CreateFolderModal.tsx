@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Folder {
-  id: string;
+  _id: string;
   name: string;
   parentId?: string;
   color: string;
@@ -20,7 +20,7 @@ interface Folder {
 interface CreateFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (folder: Omit<Folder, 'id'>) => void;
+  onCreate: (folder: Omit<Folder, '_id'>) => void;
   folders: Folder[];
 }
 
@@ -52,7 +52,6 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
 
     onCreate({
       name: name.trim(),
-      parentId: parentId === "none" ? undefined : parentId || undefined,
       color,
     });
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StatsDashboard from "@/components/StatsDashboard";
 import ProfileCard from "@/components/ProfileCard";
 import TodaysTaskList from "@/components/TodaysTaskList";
@@ -72,13 +72,107 @@ const Dashboard = () => {
   const [displayMonth, setDisplayMonth] = useState<Date>(new Date()); // for calendar view
   const [days, setDays] = useState<{ [key: string]: DayType }>(getInitialDays);
   const [events, setEvents] = useState<{ [key: string]: TaskItem[] }>({});
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
 
   // Add state for task done tracking
   const [doneMap, setDoneMap] = useState<{ [key: string]: boolean[] }>(() =>
     getInitialDoneMap({})
   );
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
+  const [userId, setUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [classes, setClasses] = useState<string[]>([]);
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('http://localhost:5000/api/user/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user profile');
+        }
+
+        const data = await response.json();
+        setUserId(data.userId);
+        setError(null);
+
+      } catch (err) {
+        setError('Failed to fetch user profile');
+        console.error('Error fetching user profile:', err);
+      }
+    };
+   
+    // Fetch tasks from API
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/tasks', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch tasks');
+        }
+
+        const data = await response.json();
+        setEvents(data.events);
+        setDoneMap(data.doneMap);
+        setClasses(data.classes);
+        setDays(data.days);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        // You might want to show an error message to the user
+      }
+    };
+    fetchEvents();
+
+  }, []);
+
+  useEffect(() => {
+    const saveTasks = async () => {
+      try {
+        if (!token) return;
+
+        const response = await fetch('http://localhost:5000/api/tasks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            events,
+            doneMap,
+            classes,
+            days
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save tasks');
+        }
+      } catch (error) {
+        console.error('Error saving tasks:', error);
+      }
+    };
+
+    // Only save if there are actual tasks to save
+    if (Object.keys(events).length > 0 || Object.keys(doneMap).length > 0 || classes.length > 0 || Object.keys(days).length > 0) {
+      saveTasks();
+    }
+  }, [events, doneMap, classes, token, days]); // Watch for changes in events, doneMap, classes, and token
+
+
+  const handleAddClass = (c: string) =>
+    setClasses(prev => prev.includes(c) ? prev : [...prev, c]);
+  const handleDeleteClass = (c: string) => setClasses(prev => prev.filter(x => x !== c));
 
   // The selected date string and info
   const selectedString = selectedDay?.toDateString() ?? "";
@@ -117,6 +211,28 @@ const Dashboard = () => {
   };
 
   // Extend onAddEvent for doneMap, now supports class
+  const handleAddTask = (event: string, labelOverride?: string) => {
+    const dayStr = selectedDay?.toDateString();
+    if (!dayStr || !token) return;
+
+    // Add task to frontend state
+    enhancedHandleAddEvent(event, labelOverride);
+
+    // Add task to backend
+    fetch('/api/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        date: dayStr,
+        text: event,
+        label: labelOverride || pendingClass
+      })
+    }).catch(error => console.error('Error adding task:', error));
+  };
+
   const enhancedHandleAddEvent = (event: string, labelOverride?: string) => {
     if (selectedDay) {
       const dayStr = selectedDay.toDateString();
@@ -140,27 +256,60 @@ const Dashboard = () => {
   };
 
   // Extend remove event for doneMap
+  const handleDeleteTask = (date: Date, index: number) => {
+    const dayStr = date.toDateString();
+    if (!token) return;
+
+    setEvents((prev) => {
+      const currentEvents = prev[dayStr] || [];
+      const newEvents = { ...prev };
+      newEvents[dayStr] = currentEvents.filter((_, i) => i !== index);
+      return newEvents;
+    });
+
+    setDoneMap((prev) => {
+      const currentDone = prev[dayStr] || [];
+      const newDoneMap = { ...prev };
+      newDoneMap[dayStr] = currentDone.filter((_, i) => i !== index);
+      return newDoneMap;
+    });
+
+    // Delete task from backend
+    fetch(`/api/tasks/${dayStr}/${index}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }).catch(error => console.error('Error deleting task:', error));
+  };
+
   const enhancedHandleRemoveEvent = (i: number) => {
     if (selectedDay) {
-      const dayStr = selectedDay.toDateString();
-      setEvents((prev) => {
-        if (!prev[dayStr]) return prev;
-        const next = [...prev[dayStr]];
-        next.splice(i, 1);
-        setDoneMap((dPrev) => {
-          const doneList = Array.isArray(dPrev[dayStr]) ? [...dPrev[dayStr]] : [];
-          doneList.splice(i, 1);
-          return {
-            ...dPrev,
-            [dayStr]: doneList,
-          };
-        });
-        return {
-          ...prev,
-          [dayStr]: next,
-        };
-      });
+      handleDeleteTask(selectedDay, i);
     }
+  };
+
+  const handleTaskCompletion = (date: Date, index: number, isCompleted: boolean) => {
+    const dayStr = date.toDateString();
+    if (!token) return;
+
+    setDoneMap((prev) => {
+      const currentDone = prev[dayStr] || [];
+      const newDoneMap = { ...prev };
+      newDoneMap[dayStr] = [...currentDone];
+      newDoneMap[dayStr][index] = isCompleted;
+      return newDoneMap;
+    });
+
+    // Update task completion status on backend
+    fetch(`/api/tasks/${dayStr}/${index}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ isCompleted })
+    }).catch(error => console.error('Error updating task:', error));
   };
 
   // Handler for toggling event done status
@@ -246,11 +395,6 @@ const Dashboard = () => {
   const isSelected = true;
 
   // class add/remove
-  const [classes, setClasses] = useState<string[]>([]);
-  const handleAddClass = (c: string) =>
-    setClasses(prev => prev.includes(c) ? prev : [...prev, c]);
-  const handleDeleteClass = (c: string) => setClasses(prev => prev.filter(x => x !== c));
-
   // Extract class list for dropdown
   const classOptions = classes;
 
@@ -307,10 +451,10 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left column - Profile Card */}
           <div className="space-y-6">
-            <ProfileCard />
+            <ProfileCard userId={userId} totalTasks={selectedStats.completed+ selectedStats.left} />-
 
             {/* Class Manager Section */}
-           
+
           </div>
 
           {/* Right column - Calendar and Stats */}
@@ -353,25 +497,25 @@ const Dashboard = () => {
 
                 {(
                   <div className="flex flex-col gap-4"> {/* vertical flex with spacing */}
-                   <TodayInfoBox
-                  dayType={infoBoxDayType}
-                  events={selectedEvents}
-                  date={infoBoxDate}
-                  doneMap={infoBoxDoneMap}
-                  onToggleDone={handleToggleDone}
-                  isToday={isToday}
-                  isSelected={true}
-                  onDayTypeChange={handleDayTypeChange}
-                  onAddEvent={(taskStr: string) => {
-                    handleAddTaskWithLabel(taskStr, pendingClass || undefined);
-                  }}
-                  onRemoveEvent={enhancedHandleRemoveEvent}
-                  onAddTasks={(tasks: string[]) => {
-                    tasks.forEach(task =>
-                      handleAddTaskWithLabel(task, pendingClass || undefined)
-                    );
-                  }}
-                />
+                    <TodayInfoBox
+                      dayType={infoBoxDayType}
+                      events={selectedEvents}
+                      date={infoBoxDate}
+                      doneMap={infoBoxDoneMap}
+                      onToggleDone={handleToggleDone}
+                      isToday={isToday}
+                      isSelected={true}
+                      onDayTypeChange={handleDayTypeChange}
+                      onAddEvent={(taskStr: string) => {
+                        handleAddTaskWithLabel(taskStr, pendingClass || undefined);
+                      }}
+                      onRemoveEvent={enhancedHandleRemoveEvent}
+                      onAddTasks={(tasks: string[]) => {
+                        tasks.forEach(task =>
+                          handleAddTaskWithLabel(task, pendingClass || undefined)
+                        );
+                      }}
+                    />
 
                     <Card>
                       <CardHeader>
@@ -396,31 +540,31 @@ const Dashboard = () => {
             </Card>
 
             {/* Stats Dashboard */}
-             <DashboardStatsCard
-          stats={[
-            {
-              title: selectedDay
-                ? `Selected (${selectedDay.toLocaleDateString()})`
-                : `Today (${today.toLocaleDateString()})`,
-              stat: selectedStats, // Now counts ALL tasks (with or without label)
-              color: "#2ecc40",
-            },
-            {
-              title: `Month (${(selectedDay ?? today).toLocaleString(undefined, {
-                month: "long",
-                year: "numeric",
-              })})`,
-              stat: thisMonthStats,
-              color: "#ffd600",
-            },
-            {
-              title: `Year (${(selectedDay ?? today).getFullYear()})`,
-              stat: thisYearStats,
-              color: "#ffd600",
-            },
-          ]}
-        />
-        <LabelStatsSection classStats={classStats} />
+            <DashboardStatsCard
+              stats={[
+                {
+                  title: selectedDay
+                    ? `Selected (${selectedDay.toLocaleDateString()})`
+                    : `Today (${today.toLocaleDateString()})`,
+                  stat: selectedStats, // Now counts ALL tasks (with or without label)
+                  color: "#2ecc40",
+                },
+                {
+                  title: `Month (${(selectedDay ?? today).toLocaleString(undefined, {
+                    month: "long",
+                    year: "numeric",
+                  })})`,
+                  stat: thisMonthStats,
+                  color: "#ffd600",
+                },
+                {
+                  title: `Year (${(selectedDay ?? today).getFullYear()})`,
+                  stat: thisYearStats,
+                  color: "#ffd600",
+                },
+              ]}
+            />
+            <LabelStatsSection classStats={classStats} />
           </div>
         </div>
       </div>

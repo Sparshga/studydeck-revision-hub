@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Plus, Search, Filter, Grid, List, Upload, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import CreateFolderModal from "@/components/CreateFolderModal";
 import ViewFullModal from "@/components/ui/ViewFullModal";
 import EditNoteModal from "@/components/ui/EditNoteModal";
 interface Note {
-  id: string;
+  _id: string;
   title: string;
   content: string;
   tags: string[];
@@ -26,10 +26,11 @@ interface Note {
   isMarkedForRevision: boolean;
   folderId?: string;
   type: 'note' | 'pdf';
+  pdfUrl?: string;
 }
 
 interface Folder {
-  id: string;
+  _id: string;
   name: string;
   parentId?: string;
   color: string;
@@ -37,36 +38,116 @@ interface Folder {
 
 const Notes = () => {
   const { toast } = useToast();
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: "1",
-      title: "Review UX Feedback",
-      content: "In the Review UX Feedback session, will evaluate the feedback received regarding the user experience (UX).",
-      tags: ["UX", "Design"],
-      subject: "Design",
-      createdAt: "Mar 13, 2024",
-      updatedAt: "Mar 13, 2024",
-      isMarkedForRevision: true,
-      type: 'note'
-    },
-    {
-      id: "2",
-      title: "Mobile App Redesign",
-      content: "Design Review: Mobile App Redesign focuses on evaluating and refining the updated design of a mobile application.",
-      tags: ["Mobile", "Design"],
-      subject: "Development",
-      createdAt: "Mar 13, 2024",
-      updatedAt: "Mar 13, 2024",
-      isMarkedForRevision: false,
-      type: 'note'
-    }
-  ]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [uploadedPDFs, setUploadedPDFs] = useState<{[key: string]: string}>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const hasFetchedData = useRef(false);
+  const isFirstRender = useRef(true);
+  const debounceTimeout = 1000; // 1s delay to debounce changes
 
-  const [folders, setFolders] = useState<Folder[]>([
-    { id: "1", name: "Design System", color: "bg-blue-500" },
-    { id: "2", name: "Mobile App", color: "bg-green-500" },
-    { id: "3", name: "Website Design", color: "bg-purple-500" }
-  ]);
+  // Fetch data on first render
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("token");
+      if (!token || hasFetchedData.current) return;
+
+      try {
+        const response = await fetch("http://localhost:5000/api/data/data", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch notes and folders");
+
+        const data = await response.json();
+        setNotes(data.notes);
+        setFolders(data.folders);
+        console.log(notes);
+        hasFetchedData.current = true;
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Sync changes to backend with debounce
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const syncData = async () => {
+      try {
+        // Sync notes
+        await Promise.all(notes.map(async (note) => {
+          let noteData = { ...note };
+          
+          // If this is a PDF note and it has a file
+          if (note.type === 'pdf' && selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            try {
+              const uploadResponse = await fetch("http://localhost:5000/api/data/upload-pdf", {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData
+              });
+              
+              if (!uploadResponse.ok) throw new Error('PDF upload failed');
+              
+              const { url } = await uploadResponse.json();
+              noteData = { ...noteData, pdfUrl: url };
+              setUploadedPDFs(prev => ({ ...prev, [note._id]: url }));
+            } catch (error) {
+              console.error('Error uploading PDF:', error);
+              toast({
+                title: "Error",
+                description: "Failed to upload PDF file",
+                variant: "destructive"
+              });
+              return;
+            }
+          }
+
+          const response = await fetch("http://localhost:5000/api/data/note", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(noteData),
+          });
+
+          if (!response.ok) {
+            const errRes = await response.json();
+            console.error("Note sync failed:", errRes);
+            toast({
+              title: "Error",
+              description: "Failed to save note",
+              variant: "destructive"
+            });
+          } 
+        }));
+
+       
+       
+
+      } catch (err) {
+        console.error("Error during syncing notes or folders:", err);
+      }
+    };
+
+    const timer = setTimeout(syncData, debounceTimeout);
+    return () => clearTimeout(timer);
+  }, [notes, selectedFile]);
+
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
@@ -93,7 +174,7 @@ const Notes = () => {
   const handleAddNote = (noteData) => {
     const newNote = {
       ...noteData,
-      id: Date.now().toString(),
+      _id: Date.now().toString(),
       createdAt: new Date().toLocaleDateString(),
       updatedAt: new Date().toLocaleDateString(),
     };
@@ -102,63 +183,180 @@ const Notes = () => {
   };
 
   const handleEditNote = (noteId) => {
-    const noteToEdit = notes.find(note => note.id === noteId);
+    const noteToEdit = notes.find(note => note._id === noteId);
     setSelectedNoteForEdit(noteToEdit);
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteNote = (id: string) => {
-    setNotes(notes.filter(note => note.id !== id));
-    toast({
-      title: "Note deleted",
-      description: "Your note has been deleted successfully.",
-    });
-  };
+  const handleDeleteNote = async (_id: string) => {
+    
+    const token = localStorage.getItem("token");
+    if (!token) return; 
 
-  const handleToggleRevision = (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/data/note/${_id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errRes = await response.json();
+        console.error("Note deletion failed:", errRes);
+        throw new Error(errRes.msg || "Failed to delete note");
+      }
+
+      // Update local state after successful deletion
+      setNotes(notes.filter(note => note._id !== _id));
+      toast({
+        title: "Note deleted",
+        description: "Your note has been deleted successfully.",
+      });
+    } catch (err) {
+      console.error("Error deleting note:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete note. Please try again.",
+        variant: "destructive",
+      });
+    }
+    };
+
+  const handleToggleRevision = (_id: string) => {
     setNotes(notes.map(note =>
-      note.id === id
+      note._id === _id
         ? { ...note, isMarkedForRevision: !note.isMarkedForRevision }
         : note
     ));
-    const note = notes.find(n => n.id === id);
+    const note = notes.find(n => n._id === _id);
     toast({
       title: note?.isMarkedForRevision ? "Removed from revision queue" : "Added to revision queue",
       description: note?.isMarkedForRevision ? "Note removed from revision queue." : "Note marked for revision.",
     });
   };
 
-  const handleCreateFolder = (folderData: Omit<Folder, 'id'>) => {
-    const newFolder: Folder = {
-      ...folderData,
-      id: Date.now().toString(),
-    };
-    setFolders([...folders, newFolder]);
-    toast({
-      title: "Folder created",
-      description: "New folder has been created successfully.",
-    });
+  const handleCreateFolder = async (folderData: Omit<Folder, '_id'>) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch("http://localhost:5000/api/data/folder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(folderData),
+      });
+
+      if (!response.ok) {
+        const errRes = await response.json();
+        console.error("Folder creation failed:", errRes);
+        throw new Error(errRes.msg || "Failed to create folder");
+      }
+
+      const newFolder = await response.json();
+      setFolders([...folders, newFolder]);
+      toast({
+        title: "Folder created",
+        description: "New folder has been created successfully.",
+      });
+    } catch (err) {
+      console.error("Error creating folder:", err);
+      toast({
+        title: "Error",
+        description: "Failed to create folder. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   const handleViewFull = (noteId) => {
-    const noteToView = notes.find(note => note.id === noteId);
+    const noteToView = notes.find(note => note._id === noteId);
     setSelectedNoteForView(noteToView);
     setIsViewFullModalOpen(true);
   };
-  const handleImportPDF = (pdfData: { title: string; subject: string; tags: string[]; folderId?: string }) => {
-    const newNote: Note = {
-      ...pdfData,
-      id: Date.now().toString(),
-      content: "PDF content imported - ready for review and annotation",
-      createdAt: new Date().toLocaleDateString(),
-      updatedAt: new Date().toLocaleDateString(),
-      isMarkedForRevision: false,
-      type: 'pdf'
-    };
-    setNotes([...notes, newNote]);
-    toast({
-      title: "PDF imported successfully",
-      description: "Your PDF has been imported as a note.",
-    });
+  const handleImportPDF = async (pdfData: { title: string; subject: string; tags: string[]; folderId?: string }, file: File | null) => {
+    if (!file) {
+      toast({
+        title: "Error",
+        description: "No PDF file selected",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch("http://localhost:5000/api/data/upload-pdf", {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('PDF upload failed');
+
+      const { url } = await response.json();
+      
+      const newNote: Note = {
+        ...pdfData,
+        _id: Date.now().toString(),
+        content: "PDF content imported - ready for review and annotation",
+        createdAt: new Date().toLocaleDateString(),
+        updatedAt: new Date().toLocaleDateString(),
+        isMarkedForRevision: false,
+        type: 'pdf',
+        pdfUrl: url
+      };
+
+      setNotes([...notes, newNote]);
+      toast({
+        title: "PDF imported successfully",
+        description: "Your PDF has been imported as a note.",
+      });
+      setSelectedFile(null);
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload PDF file",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePDFUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      const response = await fetch("http://localhost:5000/api/data/upload-pdf", {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      
+      if (!response.ok) throw new Error('PDF upload failed');
+      
+      const { url } = await response.json();
+      return url;
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload PDF file",
+        variant: "destructive"
+      });
+      return null;
+    }
   };
 
   return (
@@ -239,7 +437,7 @@ const Notes = () => {
               <SelectContent>
                 <SelectItem value="all">All Folders</SelectItem>
                 {folders.map(folder => (
-                  <SelectItem key={folder.id} value={folder.id}>{folder.name}</SelectItem>
+                  <SelectItem key={folder._id} value={folder._id}>{folder.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -270,10 +468,10 @@ const Notes = () => {
             <div className="flex flex-wrap gap-2">
               {folders.map(folder => (
                 <Button
-                  key={folder.id}
-                  variant={selectedFolder === folder.id ? "default" : "outline"}
+                  key={folder._id}
+                  variant={selectedFolder === folder._id ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedFolder(selectedFolder === folder.id ? "all" : folder.id)}
+                  onClick={() => setSelectedFolder(selectedFolder === folder._id ? "all" : folder._id)}
                   className="gap-2"
                 >
                   <div className={`w-2 h-2 rounded-full ${folder.color}`} />
@@ -304,7 +502,7 @@ const Notes = () => {
           }>
             {filteredNotes.map(note => (
               <NoteCard
-                key={note.id}
+                key={note._id}
                 note={note}
                 folders={folders}
                 viewMode={viewMode}
@@ -338,7 +536,7 @@ const Notes = () => {
       <ImportPDFModal
         isOpen={isImportPDFModalOpen}
         onClose={() => setIsImportPDFModalOpen(false)}
-        onImport={handleImportPDF}
+        onImport={(data, file) => handleImportPDF(data, file)}
         folders={folders}
         subjects={subjects}
       />
@@ -353,7 +551,7 @@ const Notes = () => {
         subjects={subjects}
         onSave={(noteData) => {
           setNotes(notes.map(note =>
-            note.id === selectedNoteForEdit.id
+            note._id === selectedNoteForEdit._id
               ? { ...note, ...noteData, updatedAt: new Date().toLocaleDateString() }
               : note
           ));

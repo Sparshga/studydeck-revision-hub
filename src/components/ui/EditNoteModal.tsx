@@ -24,7 +24,7 @@ interface Note {
 }
 
 interface Folder {
-  id: string;
+  _id: string;
   name: string;
   parentId?: string;
   color: string;
@@ -96,7 +96,7 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
       newErrors.title = "Title is required";
     }
     
-    if (!content.trim()) {
+    if (note.type === 'note' && !content.trim()) {
       newErrors.content = "Content is required";
     }
     
@@ -178,6 +178,27 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
             )}
           </div>
 
+          {note.type === 'note' && (
+            <div>
+              <Label htmlFor="content">Content *</Label>
+              <Textarea
+                id="content"
+                value={content}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  if (errors.content) {
+                    setErrors({...errors, content: ""});
+                  }
+                }}
+                placeholder="Enter note content..."
+                className={errors.content ? "border-red-500" : ""}
+              />
+              {errors.content && (
+                <p className="text-red-500 text-sm mt-1">{errors.content}</p>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="subject">Subject *</Label>
@@ -233,7 +254,7 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
                 <SelectContent>
                   <SelectItem value="none">No folder</SelectItem>
                   {folders.map(folder => (
-                    <SelectItem key={folder.id} value={folder.id}>
+                    <SelectItem key={folder._id} value={folder._id}>
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${folder.color}`} />
                         {folder.name}
@@ -280,24 +301,7 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
             )}
           </div>
 
-          <div>
-            <Label htmlFor="content">Content *</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => {
-                setContent(e.target.value);
-                if (errors.content) {
-                  setErrors({...errors, content: ""});
-                }
-              }}
-              placeholder="Write your note content..."
-              className={`min-h-[200px] ${errors.content ? "border-red-500" : ""}`}
-            />
-            {errors.content && (
-              <p className="text-red-500 text-sm mt-1">{errors.content}</p>
-            )}
-          </div>
+
 
           <div className="flex items-center space-x-2">
             <input
@@ -316,7 +320,7 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
             </Button>
             <Button 
               type="submit" 
-              disabled={!title.trim() || !content.trim() || !subject || (subject === "new" && !newSubject.trim())}
+              disabled={!title.trim() || (note.type === 'note' && !content.trim()) || !subject || (subject === "new" && !newSubject.trim())}
             >
               Save Changes
             </Button>

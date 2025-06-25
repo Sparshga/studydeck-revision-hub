@@ -3,8 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Brain, BookOpen, GraduationCap, Target, Eye, EyeOff } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+  
 const Login = () => {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -21,12 +24,47 @@ const Login = () => {
     return emailRegex.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isValidEmail(formData.email) && formData.password) {
-      console.log("Login attempt:", formData);
+const [error, setError] = useState("");
+
+// Inside your Login component
+const navigate = useNavigate();
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!isValidEmail(formData.email) || !formData.password) {
+    setError("Invalid email or password");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+       toast({
+      title: "Login Failed",
+      description: "Try with correct credentials,Please",
+    });
+      throw new Error(data?.msg || "Login failed");
     }
-  };
+
+    localStorage.setItem("token", data.token);
+    window.location.reload(); // 👈 redirect to dashboard
+  } catch (error: any) {
+    setError(error.message || "Login error");
+  }
+};
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 flex items-center justify-center p-4">
@@ -107,14 +145,14 @@ const Login = () => {
               Sign In →
             </Button>
 
-            {/* Divider */}
+            {/* Divider
             <div className="flex items-center my-6">
               <div className="flex-1 border-t border-gray-200"></div>
               <span className="px-4 text-gray-500 text-sm">Or</span>
               <div className="flex-1 border-t border-gray-200"></div>
             </div>
 
-            {/* Google Login */}
+            {/* Google Login 
             <Button variant="outline" className="w-full py-3 rounded-xl border-gray-200">
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -123,7 +161,7 @@ const Login = () => {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
               Continue with Google
-            </Button>
+            </Button> */}
           </form>
 
           {/* Language Selector */}

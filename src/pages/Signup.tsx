@@ -1,10 +1,12 @@
-
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { Brain, BookOpen, GraduationCap, Target, Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import { Brain, BookOpen, GraduationCap, Target, Eye, EyeOff } from "lucide-react";
 
 const Signup = () => {
+  const { toast } = useToast();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -15,7 +17,9 @@ const Signup = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [passwordRequirements, setPasswordRequirements] = useState({
     length: false,
     number: false,
@@ -23,7 +27,15 @@ const Signup = () => {
     special: false
   });
 
-  const handleInputChange = (field: string, value: string) => {
+  // OTP related states
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [showOtpSection, setShowOtpSection] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [isOtpLoading, setIsOtpLoading] = useState(false);
+
+  const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     if (field === 'password') {
@@ -34,14 +46,23 @@ const Signup = () => {
         special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)
       });
     }
+
+    // If email is changed and was previously verified, reset verification status
+    if (field === 'email' && isEmailVerified) {
+      setIsEmailVerified(false);
+      setShowOtpSection(false);
+      setOtp("");
+      setError("");
+      setSuccess("");
+    }
   };
 
-  const isValidEmail = (email: string) => {
+  const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const isValidPhone = (phone: string) => {
+  const isValidPhone = (phone) => {
     const phoneRegex = /^\d{10}$/;
     return phoneRegex.test(phone.replace(/\D/g, ''));
   };
@@ -58,13 +79,206 @@ const Signup = () => {
            isValidEmail(formData.email) &&
            isValidPhone(formData.phone) &&
            isPasswordValid() &&
-           formData.password === formData.confirmPassword;
+           formData.password === formData.confirmPassword &&
+           isEmailVerified;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Send OTP
+  const sendOtp = async () => {
+    if (!formData.email) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    setIsOtpLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/otp/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send OTP');
+      }
+
+      const data = await response.json();
+      
+      // Start countdown timer
+      setOtpTimer(60);
+      setShowOtpSection(true);
+      
+      toast({
+        title: "OTP Sent",
+        description: `Verification code sent to ${formData.email}`,
+      });
+      
+    } catch (err) {
+      setError("Failed to send OTP. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to send OTP. Please try again.",
+      });
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
+  // Verify OTP
+  const verifyOtp = async () => {
+    if (otp.length !== 6) {
+      setError("Please enter a 6-digit OTP");
+      return;
+    }
+
+    setIsOtpLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/otp/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email, code: otp })
+      });
+
+      if (!response.ok) {
+        throw new Error('Invalid OTP');
+      }
+
+      const data = await response.json();
+      
+      setIsEmailVerified(true);
+      setShowOtpSection(false);
+      setError("");
+      toast({
+        title: "Email Verified",
+        description: "Your email has been successfully verified!",
+      });
+      
+    } catch (err) {
+      setError("Invalid OTP. Please try again.");
+      toast({
+        title: "Verification Failed",
+        description: "Invalid OTP. Please try again.",
+      });
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
+  // Resend OTP
+  const resendOtp = async () => {
+    setOtp("");
+    setError("");
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/otp/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to resend OTP');
+      }
+
+      const data = await response.json();
+      
+      setOtpTimer(60);
+      toast({
+        title: "OTP Sent",
+        description: "New verification code sent to your email",
+      });
+      
+    } catch (err) {
+      setError("Failed to resend OTP. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to resend OTP. Please try again.",
+      });
+    }
+  };
+
+  // Countdown timer logic
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const timer = setTimeout(() => {
+        setOtpTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [otpTimer]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (canProceed()) {
-      console.log("Signup attempt:", formData);
+
+    if (!canProceed()) {
+      toast({
+        title: "Incomplete Form",
+        description: "Please complete all steps and verify your email",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone.replace(/\D/g, ""),
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 400) {
+          // User already exists
+          toast({
+            title: "User Already Exists",
+            description: "An account with this email already exists. Please try logging in.",
+          });
+        } else {
+          throw new Error(data?.msg || "Signup failed");
+        }
+      } else {
+        // Success
+        toast({
+          title: "Account Created Successfully",
+          description: "Welcome to StudyDeck! You can now start learning.",
+        });
+        
+        // Note: In a real app, avoid using localStorage in Claude artifacts
+        // localStorage.setItem("token", data.token);
+        // navigate("/dashboard");
+        
+        setSuccess("Account created successfully!");
+      }
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+      toast({
+        title: "Signup Failed",
+        description: err.message || "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,7 +303,19 @@ const Signup = () => {
             <p className="text-gray-600">Enhance Your Learning with StudyDeck</p>
           </div>
 
-          {/* Form */}
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+          
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+              <p className="text-green-600 text-sm">{success}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name Field */}
             <div className="relative">
@@ -109,22 +335,97 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Email Field */}
+            {/* Email Field with Verification */}
             <div className="relative">
-              <div className="flex items-center bg-gray-50 rounded-xl px-4 py-4 border border-gray-200 focus-within:border-blue-500 focus-within:bg-white transition-all">
-                <span className="text-gray-400 mr-3">📧</span>
+              <div className={`flex items-center rounded-xl px-4 py-4 border transition-all ${
+                isEmailVerified 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-gray-50 border-gray-200 focus-within:border-blue-500 focus-within:bg-white'
+              }`}>
+                <span className={`mr-3 ${isEmailVerified ? 'text-green-600' : 'text-gray-400'}`}>📧</span>
                 <input
                   type="email"
                   placeholder="Email Address"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   className="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-500"
+                  disabled={isEmailVerified}
                   required
                 />
-                {formData.email && isValidEmail(formData.email) && (
-                  <span className="text-green-500 ml-2">✓</span>
+                {isEmailVerified ? (
+                  <CheckCircle className="w-5 h-5 text-green-500 ml-2" />
+                ) : (
+                  formData.email && isValidEmail(formData.email) && (
+                    <span className="text-green-500 ml-2">✓</span>
+                  )
                 )}
               </div>
+              
+              {/* Email Verification Section */}
+              {!isEmailVerified && isValidEmail(formData.email) && (
+                <div className="mt-4 space-y-4">
+                  <Button 
+                    type="button"
+                    onClick={sendOtp}
+                    disabled={isOtpLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-all"
+                  >
+                    {isOtpLoading ? "Sending OTP..." : "Verify Email →"}
+                  </Button>
+                </div>
+              )}
+
+              {/* OTP Input Section */}
+              {showOtpSection && !isEmailVerified && (
+                <div className="mt-4 space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-3">
+                      Enter the 6-digit code sent to <span className="font-medium text-blue-600">{formData.email}</span>
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center bg-white rounded-xl px-4 py-3 border border-blue-200">
+                    <span className="text-blue-600 mr-3">🔢</span>
+                    <input
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-500 text-center text-xl tracking-wider"
+                      maxLength={6}
+                    />
+                    {otp.length === 6 && (
+                      <span className="text-green-500 ml-2">✓</span>
+                    )}
+                  </div>
+
+                  <Button 
+                    type="button"
+                    onClick={verifyOtp}
+                    disabled={otp.length !== 6 || isOtpLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-all"
+                  >
+                    {isOtpLoading ? "Verifying..." : "Verify Code"}
+                  </Button>
+
+                  <div className="text-center">
+                    {otpTimer > 0 ? (
+                      <p className="text-gray-500 text-sm">
+                        Resend code in {otpTimer}s
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={resendOtp}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        disabled={otpTimer > 0}
+                      >
+                        {otpTimer > 0 ? `Resend in ${otpTimer}s` : 'Resend verification code'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Phone Field */}
@@ -231,21 +532,21 @@ const Signup = () => {
             {/* Sign Up Button */}
             <Button 
               type="submit"
-              disabled={!canProceed()}
+              disabled={!canProceed() || isLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl text-lg font-semibold transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign Up →
+              {isLoading ? "Creating Account..." : "Create Account →"}
             </Button>
 
             {/* Divider */}
-            <div className="flex items-center my-6">
+            {/* <div className="flex items-center my-6">
               <div className="flex-1 border-t border-gray-200"></div>
               <span className="px-4 text-gray-500 text-sm">Or</span>
               <div className="flex-1 border-t border-gray-200"></div>
-            </div>
+            </div> */}
 
             {/* Google Login */}
-            <Button variant="outline" className="w-full py-3 rounded-xl border-gray-200">
+            {/* <Button variant="outline" className="w-full py-3 rounded-xl border-gray-200">
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -253,7 +554,7 @@ const Signup = () => {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
               Continue with Google
-            </Button>
+            </Button> */}
           </form>
 
           {/* Language Selector */}

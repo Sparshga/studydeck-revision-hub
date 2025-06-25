@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import FancyLogoutButton from "@/components/FancyLogoutButton";
-
+import { useNavigate } from "react-router-dom";
 const navItems = [
   { path: "/dashboard", label: "Dashboard" },
   { path: "/notes", label: "Notes" },
@@ -32,7 +32,7 @@ const Navbar = () => {
                 <Link to={path}>{label}</Link>
               </Button>
             ))}
-            <FancyLogoutButton />
+            <FancyLogoutButton  />;
           </>
         ) : (
           <>

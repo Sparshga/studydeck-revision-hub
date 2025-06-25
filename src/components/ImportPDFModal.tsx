@@ -17,10 +17,11 @@ interface ImportData {
   subject: string;
   tags: string[];
   folderId?: string;
+  pdfUrl?: string;
 }
 
 interface Folder {
-  id: string;
+  _id: string;
   name: string;
   parentId?: string;
   color: string;
@@ -29,7 +30,7 @@ interface Folder {
 interface ImportPDFModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (data: ImportData) => void;
+  onImport: (data: ImportData, file: File | null) => void;
   folders: Folder[];
   subjects: string[];
 }
@@ -82,7 +83,10 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
 
   const handleSubmit = () => {
     // Validation: Check if required fields are filled
-    if (!selectedFile || !title.trim()) return;
+    if (!selectedFile || !title.trim()) {
+      alert("Please select a PDF file and enter a title");
+      return;
+    }
     
     // Check if subject is selected
     if (!subject) {
@@ -97,25 +101,12 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
     }
 
     const finalSubject = subject === "new" ? newSubject.trim() : subject;
-    
     onImport({
       title: title.trim(),
       subject: finalSubject,
       tags,
-      folderId: folderId === "none" ? undefined : folderId || undefined,
-    });
-
-    // Reset form
-    setSelectedFile(null);
-    setTitle("");
-    setSubject("");
-    setNewSubject("");
-    setTags([]);
-    setTagInput("");
-    setFolderId("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+      folderId: folderId || undefined
+    }, selectedFile);
     onClose();
   };
 
@@ -186,7 +177,7 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="subject">Subject *</Label>
-              <Select value={subject} onValueChange={setSubject}>
+              <Select value={subject || ''} onValueChange={setSubject}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
@@ -196,7 +187,7 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
                       <SelectItem key={subj} value={subj}>{subj}</SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="" disabled>No subjects available</SelectItem>
+                    <SelectItem value="no-subjects" disabled>No subjects available</SelectItem>
                   )}
                   <SelectItem value="new">+ Create New Subject</SelectItem>
                 </SelectContent>
@@ -214,7 +205,7 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
 
             <div>
               <Label htmlFor="folder">Folder (Optional)</Label>
-              <Select value={folderId} onValueChange={setFolderId}>
+              <Select value={folderId || ''} onValueChange={setFolderId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select folder" />
                 </SelectTrigger>
@@ -222,7 +213,7 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
                   <SelectItem value="none">No folder</SelectItem>
                   {folders && folders.length > 0 ? (
                     folders.map(folder => (
-                      <SelectItem key={folder.id} value={folder.id}>
+                      <SelectItem key={folder._id} value={folder._id}>
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${folder.color}`} />
                           {folder.name}
@@ -230,7 +221,7 @@ const ImportPDFModal: React.FC<ImportPDFModalProps> = ({
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="" disabled>No folders available</SelectItem>
+                    <SelectItem value="no-folders" disabled>No folders available</SelectItem>
                   )}
                 </SelectContent>
               </Select>

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface Note {
-  id: string;
+  _id: string;
   title: string;
   content: string;
   tags: string[];
@@ -33,7 +33,7 @@ interface Note {
 }
 
 interface Folder {
-  id: string;
+  _id: string;
   name: string;
   parentId?: string;
   color: string;
@@ -43,10 +43,10 @@ interface NoteCardProps {
   note: Note;
   folders: Folder[];
   viewMode: "grid" | "list";
-  onEdit: (id: string, noteData: Partial<Note>) => void;
-  onDelete: (id: string) => void;
-  onToggleRevision: (id: string) => void;
-  onViewFull: (id: string) => void;
+  onEdit: (_id: string, noteData: Partial<Note>) => void;
+  onDelete: (_id: string) => void;
+  onToggleRevision: (_id: string) => void;
+  onViewFull: (_id: string) => void;
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({
@@ -58,7 +58,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
   onToggleRevision,
   onViewFull,
 }) => {
-  const folder = folders.find(f => f.id === note.folderId);
+  const folder = folders.find(f => f._id === note.folderId);
   
   const truncateContent = (content: string, maxLength: number) => {
     return content.length > maxLength ? content.substring(0, maxLength) + "..." : content;
@@ -116,15 +116,15 @@ const NoteCard: React.FC<NoteCardProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onViewFull(note.id)}>
+                  <DropdownMenuItem onClick={() => onViewFull(note._id)}>
                     <Eye className="w-4 h-4 mr-2" />
                     {note.type === 'pdf' ? 'View Full PDF' : 'View Full Note'}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onEdit(note.id, {})}>
+                  <DropdownMenuItem onClick={() => onEdit(note._id, {})}>
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onToggleRevision(note.id)}>
+                  <DropdownMenuItem onClick={() => onToggleRevision(note._id)}>
                     {note.isMarkedForRevision ? (
                       <>
                         <StarOff className="w-4 h-4 mr-2" />
@@ -138,7 +138,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
                     )}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => onDelete(note.id)}
+                    onClick={() => onDelete(note._id)}
                     className="text-red-600"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -176,15 +176,15 @@ const NoteCard: React.FC<NoteCardProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onViewFull(note.id)}>
+              <DropdownMenuItem onClick={() => onViewFull(note._id)}>
                 <Eye className="w-4 h-4 mr-2" />
                 {note.type === 'pdf' ? 'View Full PDF' : 'View Full Note'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit(note.id, {})}>
+              <DropdownMenuItem onClick={() => onEdit(note._id, {})}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onToggleRevision(note.id)}>
+              <DropdownMenuItem onClick={() => onToggleRevision(note._id)}>
                 {note.isMarkedForRevision ? (
                   <>
                     <StarOff className="w-4 h-4 mr-2" />
@@ -198,7 +198,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
                 )}
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => onDelete(note.id)}
+                onClick={() => onDelete(note._id)}
                 className="text-red-600"
               >
                 <Trash2 className="w-4 h-4 mr-2" />

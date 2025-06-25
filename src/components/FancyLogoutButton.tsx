@@ -1,21 +1,22 @@
-
 import { LogOut } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const FancyLogoutButton = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
+  const navigate = useNavigate(); // <-- navigation hook
 
-  const handleLogout = () => {
-    setIsClicked(true);
-    // Add your logout logic here
-    setTimeout(() => {
-      console.log("Logging out...");
-      // Example: redirect to login page
-      // window.location.href = '/login';
-      setIsClicked(false);
-    }, 800);
-  };
+ const handleLogout = () => {
+  setIsClicked(true);
+  localStorage.removeItem("token");
+
+  setTimeout(() => {
+    console.log("Logged out!");
+    window.location.reload(); // 🔄 force re-check and redirect
+  }, 800);
+};
+
 
   return (
     <button
@@ -38,17 +39,14 @@ const FancyLogoutButton = () => {
         ${isClicked ? 'animate-pulse' : ''}
       `}
     >
-      {/* Animated background overlay */}
       <div className={`
         absolute inset-0 bg-gradient-to-r from-red-600 to-pink-700
         transform transition-transform duration-300 ease-out
         ${isHovered ? 'translate-x-0' : 'translate-x-full'}
       `} />
-      
-      {/* Shimmer effect */}
+
       <div className="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700 ease-out" />
-      
-      {/* Button content */}
+
       <div className="relative flex items-center justify-center gap-2">
         <LogOut 
           size={16} 
@@ -65,8 +63,7 @@ const FancyLogoutButton = () => {
           {isClicked ? 'Logging out...' : 'Logout'}
         </span>
       </div>
-      
-      {/* Loading dots */}
+
       {isClicked && (
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
           <div className="flex space-x-1">
